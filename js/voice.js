@@ -30,7 +30,11 @@
     wakeLock: null
   };
 
-  try { V.enabled = localStorage.getItem('eclipse-voice') === '1'; } catch (e) {}
+  // Activada por defecto: solo queda muda si el usuario la apaga a propósito.
+  // No suena nada hasta su primer toque de todos modos, porque el navegador
+  // bloquea el audio sin gesto previo.
+  V.enabled = true;
+  try { V.enabled = localStorage.getItem('eclipse-voice') !== '0'; } catch (e) {}
 
   // ---------------------------------------------------------------------
   // Selección de la mejor voz instalada
@@ -152,6 +156,43 @@
   function cancel() { if (SUPPORTED) try { speechSynthesis.cancel(); } catch (e) {} }
 
   /**
+   * Intenta hablar ya; si el navegador lo bloquea por falta de gesto del
+   * usuario (política de autoplay), deja el mensaje armado para soltarlo en
+   * el primer toque que haga, sea donde sea. Así el saludo al abrir la app
+   * llega igualmente, sin obligar a pulsar un botón concreto.
+   */
+  let pending = null, armed = false;
+  function speakOrOnGesture(text, opt) {
+    if (!SUPPORTED || !V.enabled || !text) return;
+    let started = false;
+
+    if (!V.voice) pickVoice((global.I18N && I18N.lang) || 'ca');
+    const u = new SpeechSynthesisUtterance(text);
+    if (V.voice) { u.voice = V.voice; u.lang = V.voice.lang; }
+    u.rate = 0.96; u.pitch = 1; u.volume = 1;
+    u.onstart = () => { started = true; pending = null; };
+    u.onerror = () => { if (!started) arm(text, opt); };
+    try { speechSynthesis.speak(u); } catch (e) { arm(text, opt); return; }
+
+    // Si en un segundo no ha arrancado, damos por hecho que está bloqueado
+    setTimeout(() => { if (!started && !speechSynthesis.speaking) arm(text, opt); }, 1000);
+  }
+
+  function arm(text, opt) {
+    pending = { text, opt };
+    if (armed) return;
+    armed = true;
+    const fire = () => {
+      if (!pending) return;
+      const p = pending; pending = null;
+      unlock();
+      speak(p.text, p.opt);
+    };
+    ['pointerdown', 'touchstart', 'keydown'].forEach(ev =>
+      addEventListener(ev, fire, { once: true, passive: true }));
+  }
+
+  /**
    * Desbloqueo por gesto del usuario. iOS no deja hablar si la primera
    * llamada no viene de un toque, así que la activación es manual a propósito.
    */
@@ -199,6 +240,6 @@
     get voiceName() { return V.voiceName; },
     get quality() { return V.quality; },
     get fallbackLang() { return V.fallbackLang; },
-    speak, cancel, setEnabled, pickVoice, refresh, onVoiceReady, unlock
+    speak, speakOrOnGesture, cancel, setEnabled, pickVoice, refresh, onVoiceReady, unlock
   };
 })(window);

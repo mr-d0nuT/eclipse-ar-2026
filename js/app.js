@@ -326,11 +326,20 @@
 
   /** Resumen hablado bajo demanda */
   function speakBriefing() {
+    Voice.speak(briefingText(), { force: true, urgent: true });
+  }
+
+  /** Texto del resumen: dónde estás, qué verás, a qué hora y hacia dónde */
+  function briefingText() {
     const lc = state.lc;
-    if (!lc) { Voice.speak(T('cd.notVisible'), { force: true, urgent: true }); return; }
+    if (!lc) return T('cd.notVisible');
 
     const isTotal = lc.type === 'total' && !!lc.c2;
-    const parts = [T('v.briefWhere', { place: state.label })];
+    const parts = [];
+    // Solo nombramos el sitio si es un topónimo de verdad. Con el GPS la
+    // etiqueta es «La meva ubicació», y «Estàs a La meva ubicació» suena fatal;
+    // la frase siguiente ya empieza por «Des d'aquí…», así que encaja sola.
+    if (!state.labelKey) parts.push(T('v.briefWhere', { place: state.label }));
     if (isTotal) {
       parts.push(T('v.briefTotal', { c2: fmtHM(lc.c2.date), dur: spokenDur(lc.totalityDuration) }));
     } else {
@@ -345,8 +354,21 @@
     // Donde no hay totalidad, el filtro NO se quita nunca. Decir «salvo durante
     // la totalidad» allí sería una invitación a quemarse la retina.
     parts.push(T(isTotal ? 'v.briefFilter' : 'v.briefFilterAlways'));
+    return parts.join(' ');
+  }
 
-    Voice.speak(parts.join(' '), { force: true, urgent: true });
+  /**
+   * Bienvenida hablada al abrir la app: cuánto falta + qué verás desde aquí.
+   * Espera a que el GPS resuelva (o a que se agote el plazo) para no anunciar
+   * la ubicación equivocada, y a que el sistema haya cargado las voces.
+   */
+  let welcomeDone = false;
+  function sayWelcome() {
+    if (welcomeDone || !Voice.enabled || !state.lc) return;
+    welcomeDone = true;
+    markPastAsSpoken();
+    const txt = greetingText() + ' ' + briefingText();
+    Voice.onVoiceReady(() => Voice.speakOrOnGesture(txt));
   }
 
   /**
@@ -362,20 +384,58 @@
     return s;
   }
 
+  // Unidades de tiempo habladas, con singular y plural por idioma
+  const UNITS = {
+    ca: { d: ['dia', 'dies'], h: ['hora', 'hores'], m: ['minut', 'minuts'], s: ['segon', 'segons'], and: ' i ' },
+    es: { d: ['día', 'días'], h: ['hora', 'horas'], m: ['minuto', 'minutos'], s: ['segundo', 'segundos'], and: ' y ' },
+    en: { d: ['day', 'days'], h: ['hour', 'hours'], m: ['minute', 'minutes'], s: ['second', 'seconds'], and: ' and ' },
+    fr: { d: ['jour', 'jours'], h: ['heure', 'heures'], m: ['minute', 'minutes'], s: ['seconde', 'secondes'], and: ' et ' },
+    de: { d: ['Tag', 'Tage'], h: ['Stunde', 'Stunden'], m: ['Minute', 'Minuten'], s: ['Sekunde', 'Sekunden'], and: ' und ' }
+  };
+
+  /** Une una lista en lenguaje natural: «24 dies, 3 hores i 12 minuts» */
+  function joinSpoken(items, and) {
+    if (items.length <= 1) return items.join('');
+    return items.slice(0, -1).join(', ') + and + items[items.length - 1];
+  }
+
   /** «1m 48s» -> algo que una voz pueda leer con naturalidad */
   function spokenDur(sec) {
     sec = Math.round(sec);
+    const U = UNITS[I18N.lang] || UNITS.es;
     const m = Math.floor(sec / 60), s = sec % 60;
-    const L = I18N.lang;
-    const MIN = { ca: ['minut', 'minuts'], es: ['minuto', 'minutos'], en: ['minute', 'minutes'],
-                  fr: ['minute', 'minutes'], de: ['Minute', 'Minuten'] }[L];
-    const SEC = { ca: ['segon', 'segons'], es: ['segundo', 'segundos'], en: ['second', 'seconds'],
-                  fr: ['seconde', 'secondes'], de: ['Sekunde', 'Sekunden'] }[L];
-    const AND = { ca: ' i ', es: ' y ', en: ' and ', fr: ' et ', de: ' und ' }[L];
     const out = [];
-    if (m) out.push(m + ' ' + MIN[m === 1 ? 0 : 1]);
-    if (s) out.push(s + ' ' + SEC[s === 1 ? 0 : 1]);
-    return out.join(AND) || '0 ' + SEC[1];
+    if (m) out.push(m + ' ' + U.m[m === 1 ? 0 : 1]);
+    if (s) out.push(s + ' ' + U.s[s === 1 ? 0 : 1]);
+    return joinSpoken(out, U.and) || '0 ' + U.s[1];
+  }
+
+  /** Cuenta atrás completa hablada: días, horas, minutos y segundos */
+  function spokenCountdown(ms) {
+    const U = UNITS[I18N.lang] || UNITS.es;
+    let sec = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(sec / 86400); sec -= d * 86400;
+    const h = Math.floor(sec / 3600);  sec -= h * 3600;
+    const m = Math.floor(sec / 60);    sec -= m * 60;
+    const out = [];
+    if (d) out.push(d + ' ' + U.d[d === 1 ? 0 : 1]);
+    if (h) out.push(h + ' ' + U.h[h === 1 ? 0 : 1]);
+    if (m) out.push(m + ' ' + U.m[m === 1 ? 0 : 1]);
+    // Los segundos solo cuando quedan pocos días: «24 días y 13 segundos» chirría
+    if (sec && d === 0) out.push(sec + ' ' + U.s[sec === 1 ? 0 : 1]);
+    return joinSpoken(out, U.and) || '0 ' + U.s[1];
+  }
+
+  /** Saludo al abrir la app: cuánto falta, dicho en voz alta */
+  function greetingText() {
+    const lc = state.lc;
+    if (!lc) return T('v.greetNoEcl');
+    const t = now();
+    if (t < lc.c1.date) return T('v.greet', { t: spokenCountdown(lc.c1.date - t) });
+    if (lc.c2 && t < lc.c2.date) return T('v.greetC2', { t: spokenCountdown(lc.c2.date - t) });
+    if (lc.c2 && lc.c3 && t >= lc.c2.date && t < lc.c3.date) return T('v.greetNow');
+    if (t < lc.c4.date) return T('v.greetPartial');
+    return T('v.greetOver');
   }
 
   /**
@@ -795,6 +855,7 @@
         $('geoLabel').textContent = T('app.geoActive');
         setLocation(p.coords.latitude, p.coords.longitude, p.coords.altitude || 0,
                     T('app.myLocation'), 'app.myLocation');
+        sayWelcome();          // ya sabemos dónde estás: ahora sí, saludo
       },
       err => {
         $('geoLabel').textContent = T('app.geo');
@@ -874,9 +935,15 @@
   function updateVoiceUI() {
     const b = $('btnVoice');
     if (!b) return;
-    if (!Voice.supported) { b.style.display = 'none'; $('btnBrief').style.display = 'none'; return; }
-    b.textContent = Voice.enabled ? T('v.btnOn') : T('v.btnOff');
-    b.classList.toggle('total', Voice.enabled);
+    if (!Voice.supported) {
+      b.style.display = 'none'; $('btnBrief').style.display = 'none';
+      $('countdown').classList.remove('tappable');
+      const h = document.querySelector('.cd-hint'); if (h) h.style.display = 'none';
+      return;
+    }
+    b.classList.toggle('on', Voice.enabled);
+    $('voiceTitle').textContent = T(Voice.enabled ? 'tl.voiceOn' : 'tl.voice');
+
     const note = $('voiceNote');
     if (note) {
       let txt = '';
@@ -903,6 +970,22 @@
   };
 
   $('btnBrief').onclick = () => { Voice.unlock(); speakBriefing(); };
+
+  // Tocar el reloj: dice en voz alta cuánto falta. Al ser un gesto explícito
+  // del usuario, ningún navegador lo bloquea.
+  function sayCountdown() {
+    Voice.unlock();
+    Voice.speak(greetingText(), { force: true, urgent: true });
+    const c = $('countdown');
+    c.classList.remove('speaking');
+    void c.offsetWidth;                  // reinicia la animación
+    c.classList.add('speaking');
+    if (navigator.vibrate) navigator.vibrate(18);
+  }
+  $('countdown').addEventListener('click', sayCountdown);
+  $('countdown').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sayCountdown(); }
+  });
 
   /** Marca como ya dichos los hitos que quedaron atrás, para no soltarlos de golpe */
   function markPastAsSpoken() {
@@ -950,8 +1033,10 @@
 
   recompute();
   refreshSunset();
-  autoGeo();
   markPastAsSpoken();
+  autoGeo();
+  // Si el GPS tarda o lo deniegas, saludamos igual con la última ubicación
+  setTimeout(sayWelcome, 4000);
 
   window.__eclipseTick = tick;     // permite simular el paso del tiempo
 
