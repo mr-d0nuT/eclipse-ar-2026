@@ -53,9 +53,11 @@
     live: true,
     map: null, mapLayers: {},
     notified: {},
+    spoken: {},             // hitos de voz ya pronunciados
+    vSchedule: null,        // guion de narración para la ubicación actual
     deferredInstall: null
   };
-  window.__eclipseState = state;
+  window.__eclipseState = state;   // útil para depurar y para las pruebas
 
   const fmtTime = d => d ? d.toLocaleTimeString(I18N.locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
   const fmtHM   = d => d ? d.toLocaleTimeString(I18N.locale, { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -313,8 +315,130 @@
     $('cdM').textContent = pad(m);
     $('cdS').textContent = pad(Math.floor(s));
     $('countdown').classList.toggle('urgent', (target - t) < 5 * 60000);
+  }
 
-    checkAlarms(t, lc);
+  // =====================================================================
+  // NARRACIÓN HABLADA
+  // Durante la totalidad NO debes mirar el móvil: son 100 segundos que no se
+  // repiten. Por eso la app narra sola las fases y va soltando qué mirar en
+  // cada momento, con los ojos y las manos libres.
+  // =====================================================================
+
+  /** Resumen hablado bajo demanda */
+  function speakBriefing() {
+    const lc = state.lc;
+    if (!lc) { Voice.speak(T('cd.notVisible'), { force: true, urgent: true }); return; }
+
+    const isTotal = lc.type === 'total' && !!lc.c2;
+    const parts = [T('v.briefWhere', { place: state.label })];
+    if (isTotal) {
+      parts.push(T('v.briefTotal', { c2: fmtHM(lc.c2.date), dur: spokenDur(lc.totalityDuration) }));
+    } else {
+      parts.push(T('v.briefPartial', { pct: pctCovered(lc) }));
+    }
+    parts.push(T('v.briefTimes', { c1: fmtHM(lc.c1.date), c4: fmtHM(lc.c4.date) }));
+    parts.push(T('v.briefSun', {
+      alt: lc.max.altRefracted.toFixed(0),
+      dir: cardinal(lc.max.az)
+    }));
+    if (lc.max.altRefracted < 8) parts.push(T('v.briefLow'));
+    // Donde no hay totalidad, el filtro NO se quita nunca. Decir «salvo durante
+    // la totalidad» allí sería una invitación a quemarse la retina.
+    parts.push(T(isTotal ? 'v.briefFilter' : 'v.briefFilterAlways'));
+
+    Voice.speak(parts.join(' '), { force: true, urgent: true });
+  }
+
+  /**
+   * Porcentaje del Sol cubierto para decirlo en voz alta.
+   * En un eclipse parcial nunca puede sonar «100 %»: sitios como Madrid llegan
+   * al 99,89 % y redondear a 100 haría creer que se puede mirar sin filtro.
+   */
+  function pctCovered(lc) {
+    if (lc.type === 'total') return '100';
+    let s = Math.min(lc.obscuration * 100, 99.9).toFixed(1).replace(/\.0$/, '');
+    // Separador decimal correcto o el sintetizador lee «punto» en castellano
+    if (I18N.lang !== 'en') s = s.replace('.', ',');
+    return s;
+  }
+
+  /** «1m 48s» -> algo que una voz pueda leer con naturalidad */
+  function spokenDur(sec) {
+    sec = Math.round(sec);
+    const m = Math.floor(sec / 60), s = sec % 60;
+    const L = I18N.lang;
+    const MIN = { ca: ['minut', 'minuts'], es: ['minuto', 'minutos'], en: ['minute', 'minutes'],
+                  fr: ['minute', 'minutes'], de: ['Minute', 'Minuten'] }[L];
+    const SEC = { ca: ['segon', 'segons'], es: ['segundo', 'segundos'], en: ['second', 'seconds'],
+                  fr: ['seconde', 'secondes'], de: ['Sekunde', 'Sekunden'] }[L];
+    const AND = { ca: ' i ', es: ' y ', en: ' and ', fr: ' et ', de: ' und ' }[L];
+    const out = [];
+    if (m) out.push(m + ' ' + MIN[m === 1 ? 0 : 1]);
+    if (s) out.push(s + ' ' + SEC[s === 1 ? 0 : 1]);
+    return out.join(AND) || '0 ' + SEC[1];
+  }
+
+  /**
+   * Hitos de la narración. `at` devuelve el instante; se dispara una sola vez
+   * cuando el reloj lo cruza, dentro de una ventana de tolerancia.
+   */
+  function voiceSchedule(lc) {
+    const S = [];
+    const push = (id, date, key, opt) => { if (date) S.push({ id, date, key, opt: opt || {} }); };
+    const rel = (d, secs) => d ? new Date(d.getTime() + secs * 1000) : null;
+
+    push('h1',  rel(lc.c1.date, -3600), 'v.h1');
+    push('m10', rel(lc.c1.date, -600),  'v.m10');
+    push('c1',  lc.c1.date,             'v.c1');
+
+    // Hitos de cobertura: buscamos cuándo se alcanza cada fracción
+    for (const [id, frac, key] of [['p25', .25, 'v.p25'], ['p50', .5, 'v.p50'], ['p75', .75, 'v.p75']]) {
+      const d = timeOfObscuration(lc, frac);
+      push(id, d, key);
+    }
+
+    if (lc.c2 && lc.c3) {
+      push('m5',  rel(lc.c2.date, -300), 'v.m5');
+      push('m1',  rel(lc.c2.date, -60),  'v.m1');
+      push('s20', rel(lc.c2.date, -20),  'v.s20');
+      push('c2',  lc.c2.date,            'v.c2', { urgent: true });
+      // A mitad de totalidad, solo si hay tiempo de decirlo sin estorbar
+      if (lc.totalityDuration > 40) {
+        push('mid', rel(lc.c2.date, Math.min(18, lc.totalityDuration * 0.35)), 'v.mid');
+      }
+      push('c3w', rel(lc.c3.date, -12),  'v.c3warn', { urgent: true });
+      push('c3',  rel(lc.c3.date, 2),    'v.c3');
+    } else {
+      push('pmax', lc.max.date, 'v.pMax', { pct: pctCovered(lc) });
+    }
+    push('c4', lc.c4.date, 'v.c4');
+    return S;
+  }
+
+  /** Instante en que la fracción cubierta alcanza `frac` (rama de entrada) */
+  function timeOfObscuration(lc, frac) {
+    if (lc.obscuration < frac) return null;
+    let lo = lc.c1.date.getTime(), hi = lc.max.date.getTime();
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      const st = Eclipse.stateAt(new Date(mid), state.lat, state.lon, state.height);
+      if (st.obscuration < frac) lo = mid; else hi = mid;
+    }
+    return new Date((lo + hi) / 2);
+  }
+
+  function checkVoice(t) {
+    if (!state.live || !Voice.enabled || !state.lc) return;
+    if (!state.vSchedule) state.vSchedule = voiceSchedule(state.lc);
+    for (const m of state.vSchedule) {
+      if (state.spoken[m.id]) continue;
+      const dt = (t - m.date) / 1000;
+      if (dt >= 0 && dt < 25) {              // ventana amplia: la pestaña puede
+        state.spoken[m.id] = true;           // haber estado en segundo plano
+        Voice.speak(T(m.key, m.opt), m.opt);
+        if (navigator.vibrate && m.opt.urgent) navigator.vibrate([400, 120, 400]);
+      }
+    }
   }
 
   // =====================================================================
@@ -595,6 +719,8 @@
     state.label = label || T('app.myLocation');
     state.labelKey = labelKey || null;
     state.notified = {};
+    state.spoken = {};
+    state.vSchedule = null;      // el guion depende de las horas locales
     try {
       localStorage.setItem('eclipse-loc', JSON.stringify({
         lat, lon, h: state.height, label: state.label, labelKey: state.labelKey
@@ -608,10 +734,15 @@
   // BUCLE PRINCIPAL
   // =====================================================================
   function tick() {
-    // Mientras el modo AR está abierto, la página de debajo no se ve: pararla
-    // libera CPU para que la superposición vaya a 60 fps sin tirones.
-    if (window.AR && AR.isActive()) return;
     const t = now();
+    // La voz y las alarmas SIEMPRE corren: el día del eclipse lo normal es
+    // tener el modo AR abierto, y es justo cuando más falta hacen.
+    checkVoice(t);
+    if (state.lc) checkAlarms(t, state.lc);
+
+    // El dibujo de la página de debajo sí se para con el AR abierto: no se ve
+    // y así queda toda la CPU para que la superposición vaya a 60 fps.
+    if (window.AR && AR.isActive()) return;
     updateCountdown(t);
     updateProgress(t);
     drawSim(t);
@@ -737,6 +868,50 @@
     else alert(T('tools.installHelp'));
   };
 
+  // ---------------------------------------------------------------------
+  // Controles de voz
+  // ---------------------------------------------------------------------
+  function updateVoiceUI() {
+    const b = $('btnVoice');
+    if (!b) return;
+    if (!Voice.supported) { b.style.display = 'none'; $('btnBrief').style.display = 'none'; return; }
+    b.textContent = Voice.enabled ? T('v.btnOn') : T('v.btnOff');
+    b.classList.toggle('total', Voice.enabled);
+    const note = $('voiceNote');
+    if (note) {
+      let txt = '';
+      if (Voice.enabled) {
+        if (!Voice.voiceName) txt = T('v.noVoice');
+        else {
+          txt = Voice.voiceName;
+          if (Voice.fallbackLang) txt = T('v.fallback') + ' — ' + txt;
+        }
+      }
+      note.textContent = txt;
+    }
+  }
+
+  $('btnVoice').onclick = () => {
+    Voice.setEnabled(!Voice.enabled);
+    Voice.pickVoice(I18N.lang);
+    updateVoiceUI();
+    if (Voice.enabled) {
+      state.spoken = {};                 // al reactivar, no repetimos lo pasado
+      markPastAsSpoken();
+      Voice.speak(T('v.ready'), { force: true, urgent: true });
+    }
+  };
+
+  $('btnBrief').onclick = () => { Voice.unlock(); speakBriefing(); };
+
+  /** Marca como ya dichos los hitos que quedaron atrás, para no soltarlos de golpe */
+  function markPastAsSpoken() {
+    if (!state.lc) return;
+    state.vSchedule = voiceSchedule(state.lc);
+    const t = now();
+    for (const m of state.vSchedule) if (t - m.date > 25000) state.spoken[m.id] = true;
+  }
+
   $('btnTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
   $('btnAR').onclick = () => AR.open(state);
   $('arClose').onclick = () => AR.close();
@@ -753,11 +928,16 @@
     // Las etiquetas guardadas que puso la propia app se retraducen; los
     // nombres de ciudad y los puntos del mapa se quedan como están.
     if (state.labelKey) state.label = T(state.labelKey);
+    Voice.cancel();
+    Voice.pickVoice(I18N.lang);     // otra lengua, otra voz
+    updateVoiceUI();
     recompute();
     refreshSunset();
   });
 
   I18N.applyStatic();
+  Voice.onVoiceReady(updateVoiceUI);
+  updateVoiceUI();
 
   try {
     const saved = JSON.parse(localStorage.getItem('eclipse-loc') || 'null');
@@ -771,6 +951,9 @@
   recompute();
   refreshSunset();
   autoGeo();
+  markPastAsSpoken();
+
+  window.__eclipseTick = tick;     // permite simular el paso del tiempo
 
   setInterval(tick, 1000);
   setInterval(() => { if (state.live) refreshSunset(); }, 600000);
