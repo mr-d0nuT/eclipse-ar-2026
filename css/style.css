@@ -124,7 +124,75 @@ h1 {
 .chip.accent { border-color: rgba(255,210,125,.45); color: var(--corona); }
 .chip svg { width: 14px; height: 14px; }
 
+/* ---------- Barra de herramientas ---------- */
+.toolbar { margin: 0 0 14px; }
+
+.tool {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel); border: 1px solid var(--panel-brd);
+  border-radius: var(--r-sm); padding: 10px 12px;
+  color: var(--txt); cursor: pointer; transition: .18s;
+  font-family: inherit; text-align: left; width: 100%;
+}
+.tool:hover { border-color: var(--panel-brd-hi); background: rgba(255,255,255,.075); }
+.tool:active { transform: scale(.98); }
+.tool-ico { font-size: 17px; line-height: 1; flex-shrink: 0; }
+.tool b { font-size: 12px; font-weight: 700; display: block; letter-spacing: -.01em; }
+.tool small { font-size: 9.5px; color: var(--txt-faint); display: block; line-height: 1.3; margin-top: 1px; }
+
+/* Tarjeta destacada de la voz */
+.tool-hero {
+  margin-bottom: 8px; padding: 12px 14px;
+  background: linear-gradient(115deg, rgba(255,171,61,.10), rgba(155,123,255,.08));
+  border-color: rgba(255,171,61,.30);
+}
+.tool-hero .tool-ico { font-size: 21px; }
+.tool-hero b { font-size: 13.5px; }
+.tool-hero small { font-size: 10.5px; color: var(--txt-dim); }
+.tool-txt { flex: 1; min-width: 0; }
+.tool-sw {
+  width: 38px; height: 22px; border-radius: 999px; flex-shrink: 0;
+  background: rgba(255,255,255,.12); position: relative; transition: .2s;
+}
+.tool-sw::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--txt-faint); transition: .2s;
+}
+.tool-hero.on {
+  background: linear-gradient(115deg, rgba(255,171,61,.24), rgba(255,107,53,.14));
+  border-color: var(--corona); box-shadow: 0 0 22px rgba(255,171,61,.22);
+}
+.tool-hero.on .tool-sw { background: var(--corona); }
+.tool-hero.on .tool-sw::after { left: 19px; background: #1a0f00; }
+
+/* Rejilla de herramientas secundarias */
+.tool-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px;
+}
+.tool-grid .tool {
+  flex-direction: column; align-items: center; text-align: center;
+  gap: 3px; padding: 9px 5px;
+}
+.tool-grid .tool b { font-size: 11px; }
+.tool-grid .tool small { font-size: 9px; }
+#voiceNote { margin-top: 8px; text-align: center; font-size: 10.5px; }
+
 /* ---------- Cuenta atrás ---------- */
+.tappable { cursor: pointer; transition: .18s; border-radius: var(--r-sm); }
+.tappable:hover { transform: translateY(-1px); }
+.tappable:active { transform: scale(.985); }
+.cd-hint {
+  text-align: center; font-size: 10px; color: var(--txt-faint);
+  margin-top: 10px; letter-spacing: .04em;
+}
+.countdown.speaking .cd-num { animation: sayPulse .9s ease-out; }
+@keyframes sayPulse {
+  0%   { filter: brightness(1); }
+  25%  { filter: brightness(1.7); }
+  100% { filter: brightness(1); }
+}
+
 .countdown-label {
   text-align: center; font-size: 12px; letter-spacing: .18em;
   text-transform: uppercase; color: var(--corona); font-weight: 700; margin-bottom: 14px;
