@@ -584,12 +584,14 @@
   // BUCLE PRINCIPAL
   // =====================================================================
   function tick() {
+    // Mientras el modo AR está abierto, la página de debajo no se ve: pararla
+    // libera CPU para que la superposición vaya a 60 fps sin tirones.
+    if (window.AR && AR.isActive()) return;
     const t = now();
     updateCountdown(t);
     updateProgress(t);
     drawSim(t);
     drawCompass(t);
-    if (window.AR && AR.isActive()) AR.update(t, state);
   }
 
   // =====================================================================

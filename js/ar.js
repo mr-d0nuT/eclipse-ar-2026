@@ -41,8 +41,12 @@
     haveOrientation: false,
     hfov: 65,
     showTrack: true,
-    showDisk: true
+    showDisk: true,
+    calibrating: false,
+    headingOffset: 0,      // corrección manual de la brújula, en grados
+    source: 'none'         // 'ios' | 'absolute' | 'relative'
   };
+  try { ar.headingOffset = parseFloat(localStorage.getItem('eclipse-heading-offset')) || 0; } catch (e) {}
 
   // ---------------------------------------------------------------------
   // Álgebra
@@ -95,19 +99,122 @@
   // ---------------------------------------------------------------------
   // Base de la cámara, con suavizado temporal
   // ---------------------------------------------------------------------
-  let smooth = null;       // {right, up, fwd} suavizados
+  /* Cuaterniones: suavizar la orientación como rotación (slerp) es estable.
+     Interpolar los vectores de la base por separado los desalinea y obliga a
+     re-ortonormalizar, lo que puede oscilar de signo y hacer temblar la escena. */
+  function quatFromMatrix(m) {
+    const tr = m[0][0] + m[1][1] + m[2][2];
+    let s;
+    if (tr > 0) {
+      s = Math.sqrt(tr + 1) * 2;
+      return [(m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s, 0.25 * s];
+    }
+    if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+      s = Math.sqrt(1 + m[0][0] - m[1][1] - m[2][2]) * 2;
+      return [0.25 * s, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s, (m[2][1] - m[1][2]) / s];
+    }
+    if (m[1][1] > m[2][2]) {
+      s = Math.sqrt(1 + m[1][1] - m[0][0] - m[2][2]) * 2;
+      return [(m[0][1] + m[1][0]) / s, 0.25 * s, (m[1][2] + m[2][1]) / s, (m[0][2] - m[2][0]) / s];
+    }
+    s = Math.sqrt(1 + m[2][2] - m[0][0] - m[1][1]) * 2;
+    return [(m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, 0.25 * s, (m[1][0] - m[0][1]) / s];
+  }
 
-  function rawBasis() {
+  function matFromQuat(q) {
+    const [x, y, z, w] = q;
+    return [
+      [1 - 2 * (y * y + z * z), 2 * (x * y - z * w),     2 * (x * z + y * w)],
+      [2 * (x * y + z * w),     1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+      [2 * (x * z - y * w),     2 * (y * z + x * w),     1 - 2 * (x * x + y * y)]
+    ];
+  }
+
+  function slerp(a, b, t) {
+    let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    let bb = b;
+    if (d < 0) { bb = [-b[0], -b[1], -b[2], -b[3]]; d = -d; }   // camino corto
+    if (d > 0.9995) {
+      const r = [a[0] + (bb[0] - a[0]) * t, a[1] + (bb[1] - a[1]) * t,
+                 a[2] + (bb[2] - a[2]) * t, a[3] + (bb[3] - a[3]) * t];
+      const m = Math.hypot(r[0], r[1], r[2], r[3]) || 1;
+      return [r[0] / m, r[1] / m, r[2] / m, r[3] / m];
+    }
+    const th0 = Math.acos(Math.min(1, d)), th = th0 * t;
+    const s0 = Math.cos(th) - d * Math.sin(th) / Math.sin(th0);
+    const s1 = Math.sin(th) / Math.sin(th0);
+    return [a[0] * s0 + bb[0] * s1, a[1] * s0 + bb[1] * s1,
+            a[2] * s0 + bb[2] * s1, a[3] * s0 + bb[3] * s1];
+  }
+
+  /** Gira un vector (Este, Norte, Arriba) un incremento de azimut */
+  function rotAz(v, deg) {
+    const c = Math.cos(deg * D2R), s = Math.sin(deg * D2R);
+    return [v[0] * c + v[1] * s, v[1] * c - v[0] * s, v[2]];
+  }
+
+  let smoothQ = null;    // salida final (segunda etapa)
+  let stage1Q = null;    // primera etapa del filtro en cascada
+  let slowQ = null;      // referencia lenta, solo para estimar si hay movimiento real
+
+  /** Ángulo entre dos cuaterniones, en grados */
+  function quatAngle(a, b) {
+    const d = Math.abs(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]);
+    return 2 * Math.acos(Math.min(1, d)) / D2R;
+  }
+
+  function rawQuat() {
     if (!ar.orient) return null;
     let { alpha, beta, gamma, heading } = ar.orient;
     if (typeof heading === 'number' && !isNaN(heading)) alpha = 360 - heading;  // iOS
     if (typeof alpha !== 'number' || typeof beta !== 'number' || typeof gamma !== 'number') return null;
+    return quatFromMatrix(deviceMatrix(alpha, beta, gamma));
+  }
 
-    const M = deviceMatrix(alpha, beta, gamma);
+  /**
+   * Orientación suavizada. tau bajo = respuesta rápida pero más ruido;
+   * tau alto = suave pero con retraso. 70 ms es un buen término medio.
+   */
+  function updateBasis(dt) {
+    const raw = rawQuat();
+    if (raw) {
+      if (!smoothQ) { smoothQ = stage1Q = slowQ = raw; }
+      else {
+        dt = Math.max(0.001, Math.min(0.1, dt));
+
+        // Referencia lenta. El ruido del sensor no la desplaza (se promedia a
+        // cero); un giro de verdad sí. Por eso mide movimiento real, mientras
+        // que el residuo instantáneo se deja engañar por el propio ruido.
+        slowQ = slerp(slowQ, raw, 1 - Math.exp(-dt / 0.45));
+        const motion = quatAngle(raw, slowQ);      // grados de desvío sostenido
+
+        // Con el móvil quieto -> filtrado fuerte. Girando -> respuesta directa.
+        let tau;
+        if (motion < 1.2)      tau = 0.30;         // prácticamente inmóvil
+        else if (motion < 4)   tau = 0.14;         // deriva lenta
+        else if (motion < 15)  tau = 0.05;         // panorámica
+        else                   tau = 0.012;        // giro brusco
+
+        const k = Math.min(1, 1 - Math.exp(-dt / tau));
+
+        // Cascada de dos etapas: atenúa el ruido mucho más que una sola pasada
+        // sin añadir apenas retraso perceptible.
+        stage1Q = slerp(stage1Q, raw, k);
+        smoothQ = slerp(smoothQ, stage1Q, k);
+
+        // Zona muerta final: cambios por debajo de esto no llegan a un píxel
+        // en pantalla, así que congelamos para que la imagen quede clavada.
+        if (quatAngle(smoothQ, stage1Q) < 0.04 && motion < 1.2) smoothQ = stage1Q;
+      }
+    }
+    if (!smoothQ) return null;
+
+    const M = matFromQuat(smoothQ);
     let right = mulVec(M, [1, 0, 0]);
     let up    = mulVec(M, [0, 1, 0]);
-    const fwd = mulVec(M, [0, 0, -1]);          // la cámara trasera mira hacia -Z
+    let fwd   = mulVec(M, [0, 0, -1]);      // la cámara trasera mira hacia -Z
 
+    // Rotación de la pantalla (discreta: no se suaviza)
     const sa = screenAngle() * D2R;
     if (sa) {
       const c = Math.cos(sa), s = Math.sin(sa);
@@ -115,38 +222,19 @@
       const u2 = [-right[0] * s + up[0] * c, -right[1] * s + up[1] * c, -right[2] * s + up[2] * c];
       right = r2; up = u2;
     }
+
+    // Corrección manual de la brújula
+    if (ar.headingOffset) {
+      right = rotAz(right, ar.headingOffset);
+      up    = rotAz(up, ar.headingOffset);
+      fwd   = rotAz(fwd, ar.headingOffset);
+    }
     return { right, up, fwd };
   }
 
-  /**
-   * Suaviza la base con un filtro paso bajo dependiente del tiempo y la
-   * re-ortonormaliza (interpolar vectores por separado los desalinea).
-   * tau bajo = respuesta rápida pero más ruido; tau alto = suave pero con retraso.
-   */
-  function updateBasis(dt) {
-    const raw = rawBasis();
-    if (!raw) return smooth;
-    if (!smooth) { smooth = raw; return smooth; }
-
-    const TAU = 0.09;                                  // segundos
-    const k = 1 - Math.exp(-Math.max(0.001, dt) / TAU);
-
-    // Si el giro es muy grande (el usuario ha girado de golpe), saltamos
-    // directamente para no arrastrar el retraso.
-    const angle = Math.acos(Math.max(-1, Math.min(1, dot(smooth.fwd, raw.fwd))));
-    const kk = angle > 0.6 ? 1 : k;
-
-    let fwd = norm(lerpVec(smooth.fwd, raw.fwd, kk));
-    let up = lerpVec(smooth.up, raw.up, kk);
-    let right = norm(cross(fwd, up));                  // ortonormalización de Gram-Schmidt
-    up = norm(cross(right, fwd));
-    // cross(fwd, up) da la izquierda o la derecha según el convenio; lo fijamos
-    // comparando con el valor crudo.
-    if (dot(right, raw.right) < 0) { right = [-right[0], -right[1], -right[2]]; up = norm(cross(right, fwd)); }
-    if (dot(up, raw.up) < 0) up = [-up[0], -up[1], -up[2]];
-
-    smooth = { right, up, fwd };
-    return smooth;
+  /** Azimut al que apunta la cámara, en grados */
+  function cameraAzimuth(basis) {
+    return (Math.atan2(basis.fwd[0], basis.fwd[1]) / D2R + 360) % 360;
   }
 
   /** Proyecta una dirección del cielo a coordenadas de pantalla */
@@ -161,15 +249,41 @@
   // ---------------------------------------------------------------------
   // Sensores
   // ---------------------------------------------------------------------
-  function onOrient(e) {
-    if (e.alpha === null && e.webkitCompassHeading === undefined) return;
-    ar.haveOrientation = true;
-    ar.orient = {
-      alpha: e.alpha, beta: e.beta, gamma: e.gamma,
-      absolute: e.absolute,
-      heading: e.webkitCompassHeading
+  /* -------------------------------------------------------------------
+     Sensores. CRÍTICO: en Android se disparan a la vez
+     'deviceorientationabsolute' (alfa referido al norte real) y
+     'deviceorientation' (alfa con origen arbitrario). Si se mezclan, la
+     escena salta entre dos rumbos distintos en cada fotograma: eso produce
+     un parpadeo brutal y coloca el Sol donde no está.
+     Por eso clasificamos las fuentes por calidad y nos quedamos SOLO con la
+     mejor que haya aparecido.
+     ------------------------------------------------------------------- */
+  const RANK = { none: 0, relative: 1, absolute: 2, ios: 3 };
+  let bestRank = 0;
+
+  function classify(e) {
+    if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) return 'ios';
+    if (e.absolute === true) return 'absolute';
+    return 'relative';
+  }
+
+  function makeHandler(forcedKind) {
+    return function (e) {
+      if (e.alpha === null && typeof e.webkitCompassHeading !== 'number') return;
+      const kind = forcedKind === 'absolute' ? classify(e) === 'ios' ? 'ios' : 'absolute' : classify(e);
+      if (RANK[kind] < bestRank) return;                 // llega una fuente peor: se ignora
+      bestRank = RANK[kind];
+      ar.source = kind;
+      ar.haveOrientation = true;
+      ar.orient = {
+        alpha: e.alpha, beta: e.beta, gamma: e.gamma,
+        heading: typeof e.webkitCompassHeading === 'number' ? e.webkitCompassHeading : null
+      };
     };
   }
+
+  const onAbsolute = makeHandler('absolute');
+  const onRelative = makeHandler(null);
 
   async function requestSensors() {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
@@ -180,10 +294,16 @@
       } catch (e) { return false; }
     }
     if ('ondeviceorientationabsolute' in window) {
-      addEventListener('deviceorientationabsolute', onOrient, true);
+      addEventListener('deviceorientationabsolute', onAbsolute, true);
     }
-    addEventListener('deviceorientation', onOrient, true);
+    addEventListener('deviceorientation', onRelative, true);
     return true;
+  }
+
+  function releaseSensors() {
+    removeEventListener('deviceorientationabsolute', onAbsolute, true);
+    removeEventListener('deviceorientation', onRelative, true);
+    bestRank = 0; ar.source = 'none'; ar.haveOrientation = false; ar.orient = null;
   }
 
   async function startCamera() {
@@ -285,6 +405,8 @@
   // Dibujo
   // ---------------------------------------------------------------------
   let lastW = 0, lastH = 0;
+  let lastBasis = null, lastF = 1, lastW2 = 0, lastH2 = 0;
+
   function resizeCanvas() {
     const c = $('arCanvas');
     const w = Math.round(innerWidth), h = Math.round(innerHeight);
@@ -339,8 +461,10 @@
       setHint('Esperando a los sensores de orientación… mueve un poco el móvil.', false);
       return;
     }
+    lastBasis = basis; lastW2 = w; lastH2 = h;
 
     const f = (w / 2) / Math.tan(ar.hfov / 2 * D2R);
+    lastF = f;
     const P = v => project(v, basis, w, h, f);
 
     // ---- Horizonte ----
@@ -451,6 +575,19 @@
       g.fillText('Gira hacia aquí', tx, ty);
     }
 
+    // ---- Modo calibración: retícula central ----
+    if (ar.calibrating) {
+      const cx = w / 2, cy = h / 2;
+      g.strokeStyle = '#46e39b'; g.lineWidth = 2;
+      g.beginPath(); g.arc(cx, cy, 34, 0, 7); g.stroke();
+      g.beginPath();
+      g.moveTo(cx - 52, cy); g.lineTo(cx - 12, cy);
+      g.moveTo(cx + 12, cy); g.lineTo(cx + 52, cy);
+      g.moveTo(cx, cy - 52); g.lineTo(cx, cy - 12);
+      g.moveTo(cx, cy + 12); g.lineTo(cx, cy + 52);
+      g.stroke();
+    }
+
     // ---- Barra de progreso ----
     const lc = app.lc;
     if (lc) {
@@ -504,14 +641,21 @@
       } else cd = 'Eclipse terminado';
     }
 
+    const srcTag = ar.source === 'ios' || ar.source === 'absolute' ? ''
+                 : ar.source === 'relative' ? ' <span style="color:#ffca4a">brújula relativa</span>' : '';
+    const offTag = ar.headingOffset ? ` <span style="color:#46e39b">${ar.headingOffset > 0 ? '+' : ''}${ar.headingOffset.toFixed(0)}°</span>` : '';
     const info =
-      `<div>Az <b>${cache.sunAz.toFixed(1)}°</b> · Alt <b>${cache.sunAlt.toFixed(1)}°</b></div>` +
+      `<div>Az <b>${cache.sunAz.toFixed(1)}°</b> · Alt <b>${cache.sunAlt.toFixed(1)}°</b>${offTag}</div>` +
       (st && !st.outOfRange ? `<div>Cubierto <b>${(st.obscuration * 100).toFixed(1)} %</b></div>` : '') +
-      `<div>${cd}</div>`;
+      `<div>${cd}${srcTag}</div>`;
     if (info !== lastInfo) { lastInfo = info; $('arInfo').innerHTML = info; }
 
-    if (!ar.haveOrientation) {
+    if (ar.calibrating) {
+      setHint('🎯 Apunta con la retícula al <b>Sol de verdad</b> y toca la pantalla. Si no lo ves, usa una referencia conocida.', false);
+    } else if (!ar.haveOrientation) {
       setHint('Mueve el móvil para activar la brújula.', false);
+    } else if (ar.source === 'relative') {
+      setHint('⚠️ Tu móvil no da <b>brújula absoluta</b>: el rumbo puede estar girado. Pulsa <b>Calibrar</b> y marca dónde está el Sol.', false);
     } else if (lc && lc.c2 && t >= lc.c2.date && t <= lc.c3.date) {
       setHint('🌑 <b>TOTALIDAD</b> — quítate el filtro y mira directamente', true);
     } else if (lc && lc.c2 && (lc.c2.date - t) > 0 && (lc.c2.date - t) < 120000) {
@@ -533,7 +677,7 @@
   ar.open = async function (app) {
     $('arView').classList.add('on');
     ar.active = true;
-    smooth = null; lastInfo = ''; lastHint = ''; lastAlarm = null;
+    smoothQ = null; lastInfo = ''; lastHint = ''; lastAlarm = null;
     lastW = lastH = 0;
     resizeCanvas();
     addEventListener('resize', resizeCanvas);
@@ -578,6 +722,7 @@
 
   ar.close = function () {
     ar.active = false;
+    ar.calibrating = false;
     if (raf) cancelAnimationFrame(raf);
     if (ar.stream) { ar.stream.getTracks().forEach(t => t.stop()); ar.stream = null; }
     $('arVideo').srcObject = null;
@@ -585,7 +730,43 @@
     $('arView').classList.remove('on');
     removeEventListener('resize', resizeCanvas);
     if (screen.orientation) screen.orientation.removeEventListener('change', resizeCanvas);
+    releaseSensors();
+    smoothQ = null;
+    const cb = $('arCal'); if (cb) cb.classList.remove('on');
   };
+
+  /**
+   * Calibración manual: el usuario apunta al Sol real y toca la pantalla.
+   * Calculamos el azimut del rayo que pasa por ese píxel y ajustamos el
+   * desfase de la brújula para que el Sol calculado caiga justo ahí.
+   */
+  function calibrateAt(clientX, clientY) {
+    if (!lastBasis || !cache.sunVec) return;
+    const c = $('arCanvas');
+    const rect = c.getBoundingClientRect();
+    const px = clientX - rect.left, py = clientY - rect.top;
+
+    const dx = (px - lastW2 / 2) / lastF;
+    const dy = -(py - lastH2 / 2) / lastF;
+    const b = lastBasis;
+    const dir = norm([
+      b.fwd[0] + b.right[0] * dx + b.up[0] * dy,
+      b.fwd[1] + b.right[1] * dx + b.up[1] * dy,
+      b.fwd[2] + b.right[2] * dx + b.up[2] * dy
+    ]);
+    const azTapped = (Math.atan2(dir[0], dir[1]) / D2R + 360) % 360;
+
+    let delta = cache.sunAz - azTapped;
+    delta = ((delta + 180) % 360 + 360) % 360 - 180;
+    ar.headingOffset = ((ar.headingOffset + delta + 180) % 360 + 360) % 360 - 180;
+    try { localStorage.setItem('eclipse-heading-offset', String(ar.headingOffset)); } catch (e) {}
+
+    ar.calibrating = false;
+    const cb = $('arCal'); if (cb) cb.classList.remove('on');
+    lastHint = '';
+    setHint(`✅ Brújula corregida <b>${ar.headingOffset > 0 ? '+' : ''}${ar.headingOffset.toFixed(1)}°</b>. Se recuerda para la próxima vez.`, false);
+    if (navigator.vibrate) navigator.vibrate(80);
+  }
 
   ar.isActive = () => ar.active;
   ar.update = function () { /* el bucle propio ya redibuja a 60 fps */ };
@@ -600,10 +781,28 @@
       cache.tAstro = 0;
     };
     if (cb) cb.onclick = () => {
+      ar.calibrating = !ar.calibrating;
+      cb.classList.toggle('on', ar.calibrating);
       lastHint = '';
-      setHint('🧭 <b>Calibrar:</b> dibuja un 8 en el aire con el móvil, lejos de metales, imanes y coches.', false);
+      if (!ar.calibrating) setHint('Calibración cancelada.', false);
       if (navigator.vibrate) navigator.vibrate(60);
     };
+
+    // Doble toque en el botón de calibrar = reiniciar la corrección
+    if (cb) cb.ondblclick = () => {
+      ar.headingOffset = 0;
+      try { localStorage.removeItem('eclipse-heading-offset'); } catch (e) {}
+      ar.calibrating = false; cb.classList.remove('on');
+      lastHint = ''; setHint('Corrección de brújula reiniciada.', false);
+    };
+
+    const cv = $('arCanvas');
+    if (cv) {
+      cv.style.pointerEvents = 'auto';
+      cv.addEventListener('click', e => {
+        if (ar.calibrating) calibrateAt(e.clientX, e.clientY);
+      });
+    }
   });
 
   global.AR = ar;
