@@ -1,6 +1,6 @@
 /* Service worker — funcionamiento sin conexión.
    Importante: el día del eclipse puede que no haya cobertura en el campo. */
-const CACHE = 'eclipse-ar-2026-v6';
+const CACHE = 'eclipse-ar-2026-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -51,8 +51,14 @@ self.addEventListener('fetch', e => {
   // Recursos propios: RED PRIMERO, caché como respaldo.
   // Así la app siempre sirve la última versión cuando hay cobertura,
   // y sigue funcionando entera cuando no la hay (que es el caso el día D).
+  //
+  // `cache: 'no-cache'` es imprescindible: sin él, este fetch se sirve de la
+  // caché HTTP del navegador, y GitHub Pages manda max-age=600 en el HTML.
+  // Resultado: hasta 10 minutos sirviendo un index.html viejo junto a JS nuevo,
+  // que es justo la combinación que rompe la página. Así se revalida siempre
+  // contra el servidor (respuesta 304 si no ha cambiado: cuesta casi nada).
   e.respondWith(
-    fetch(req).then(r => {
+    fetch(req, { cache: 'no-cache' }).then(r => {
       if (r.ok && new URL(req.url).origin === location.origin) {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
