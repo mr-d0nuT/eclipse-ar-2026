@@ -1,0 +1,890 @@
+/* =========================================================================
+   i18n.js — Català · Castellà · English
+   Idioma por defecto: català.
+   ========================================================================= */
+(function (global) {
+  'use strict';
+
+  const DICT = {
+
+    /* ================= CATALÀ ================= */
+    ca: {
+      'html.lang': 'ca',
+      'locale': 'ca-ES',
+      'doc.title': 'Eclipsi AR 2026 · 12 d\'agost',
+
+      'app.kicker': 'Eclipsi Solar Total',
+      'app.title': '12 d\'agost<br>de 2026',
+      'app.subtitle': 'El primer eclipsi total visible des de la península ibèrica en més d\'un segle',
+      'app.geo': 'Fer servir la meva ubicació GPS',
+      'app.geoActive': 'Ubicació GPS activa',
+      'app.geoLocating': 'Localitzant…',
+      'app.geoError': 'No s\'ha pogut obtenir la ubicació: ',
+      'app.geoHttps': 'Recorda que el GPS requereix HTTPS.',
+      'app.geoUnsupported': 'El teu navegador no admet geolocalització.',
+      'app.myLocation': 'La meva ubicació',
+      'app.mapPoint': 'Punt del mapa',
+
+      'card.phases': 'Fases de l\'eclipsi a la teva posició',
+      'card.sim': 'Simulació en temps real',
+      'card.sun': 'On és el Sol ara mateix',
+      'card.local': 'Circumstàncies locals',
+      'card.band': 'Franja de totalitat',
+      'card.cities': 'Ciutats de referència',
+      'card.safety': 'Seguretat i consells',
+      'card.tools': 'Eines',
+
+      'ro.mag': 'Magnitud',
+      'ro.obs': 'Sol cobert',
+      'ro.phase': 'Fase',
+      'ro.total': 'TOTAL',
+      'ro.partial': 'Parcial',
+      'ro.before': 'Encara no',
+      'ro.after': 'Acabat',
+
+      'scrub.explore': 'Explorar l\'eclipsi',
+      'scrub.live': 'EN DIRECTE',
+      'scrub.drag': 'Arrossega per avançar / retrocedir',
+      'scrub.back': 'Tornar al directe',
+
+      'sun.az': 'Azimut (des del Nord)',
+      'sun.alt': 'Altura sobre l\'horitzó',
+      'sun.dir': 'Orientació',
+      'sun.set': 'Posta de sol avui',
+      'sun.below': '(sota l\'horitzó)',
+      'sun.note': 'La brúixola mostra el <b>Nord a dalt</b>; la vora és l\'horitzó i el centre, el zenit. La línia taronja és el recorregut que farà el Sol durant l\'eclipsi, i el punt blanc marca l\'instant del màxim.',
+
+      'legend.center': 'Línia central',
+      'legend.band': 'Banda de totalitat',
+      'legend.you': 'La teva posició',
+      'map.note': 'La línia central més propera és a <b>{km} km</b> cap al <b>{dir}</b> ({lat}°, {lon}°). Toca el mapa per calcular qualsevol altre punt.',
+      'map.noteSimple': 'Toca el mapa per calcular les circumstàncies a qualsevol punt.',
+      'map.offline': 'Mapa no disponible sense connexió.',
+
+      'cities.note': 'En <b>taronja</b>, les que són dins de la franja de totalitat.',
+
+      'phases.note': 'Hores en la teva zona horària local. «Alt» és l\'altura del Sol sobre l\'horitzó en aquell instant.',
+      'phases.noTotality': 'Sense fase de totalitat en aquesta ubicació: l\'eclipsi serà parcial i <b>mai</b> no et podràs treure el filtre.',
+
+      'phase.c1': 'C1 · Primer contacte',
+      'phase.c1d': 'La Lluna toca la vora del Sol. Comença l\'eclipsi parcial. <b>Filtre posat.</b>',
+      'phase.c2': 'C2 · Inici de la totalitat',
+      'phase.c2d': 'Anell de diamant i grans de Baily. <b>Ja et pots treure el filtre.</b>',
+      'phase.max': 'Màxim de l\'eclipsi',
+      'phase.maxd': 'Moment àlgid. Corona solar, planetes i estrelles visibles.',
+      'phase.c3': 'C3 · Fi de la totalitat',
+      'phase.c3d': 'Reapareix el Sol. <b>Filtre posat JA</b>, abans de la primera espurna.',
+      'phase.c4': 'C4 · Últim contacte',
+      'phase.c4d': 'La Lluna abandona el disc solar. Fi de l\'eclipsi.',
+
+      'cd.c1': 'Falta per a l\'INICI de l\'eclipsi (C1)',
+      'cd.c2': '⚡ Falta per a la TOTALITAT (C2)',
+      'cd.max': 'Falta per al MÀXIM de l\'eclipsi',
+      'cd.c3': '🔴 Queda de TOTALITAT — mira ara!',
+      'cd.c4': 'Queda per al FINAL de l\'eclipsi (C4)',
+      'cd.done': '✨ L\'eclipsi ha acabat',
+      'cd.notVisible': 'Eclipsi no visible des d\'aquí',
+      'cd.days': 'Dies', 'cd.hours': 'Hores', 'cd.min': 'Min', 'cd.sec': 'Seg',
+
+      'alert.notVisible': 'Des de <b>{place}</b> aquest eclipsi <b>no és visible</b>. L\'ombra de la Lluna no passa per aquí.',
+      'alert.total': '<b>Ets dins de la franja de totalitat!</b> Veuràs la corona solar durant <b>{dur}</b> a les <b>{time}</b>.',
+      'alert.partial': 'Des d\'aquí l\'eclipsi serà <b>parcial</b> ({pct} % del Sol cobert). La línia central de totalitat passa a <b>{km} km</b> cap al <b>{dir}</b>. Val moltíssim la pena desplaçar-s\'hi: un 99 % parcial <i>no</i> s\'assembla gens a la totalitat.',
+      'alert.belowHorizon': 'El màxim de l\'eclipsi passa <b>amb el Sol ja post</b> a la teva ubicació. Cal que et desplacis cap a l\'oest o cap al nord.',
+      'alert.veryLow': 'El Sol estarà només a <b>{alt}°</b> d\'altura al màxim — poc més que l\'amplada de tres dits amb el braç estirat. Necessites un horitzó oest <b>completament net</b> (costa, mirador o plana).',
+      'alert.low': 'El Sol estarà baix, a <b>{alt}°</b> d\'altura al màxim. Busca un lloc amb l\'horitzó oest lliure de muntanyes i edificis.',
+      'alert.sunset': 'El Sol es pondrà <b>abans que acabi</b> l\'eclipsi: s\'amagarà encara mossegat per la Lluna. Un espectacle fotogràfic brutal.',
+
+      'stat.type': 'Tipus d\'eclipsi',
+      'stat.totality': 'Durada de la totalitat',
+      'stat.mag': 'Magnitud màxima',
+      'stat.obs': 'Sol cobert (àrea)',
+      'stat.duration': 'Durada total de l\'esdeveniment',
+      'stat.altMax': 'Altura del Sol al màxim',
+      'stat.azMax': 'Azimut al màxim',
+      'stat.ratio': 'Mida Lluna / Sol',
+      'stat.noData': 'Sense dades.',
+      'badge.total': 'Total', 'badge.annular': 'Anular', 'badge.partial': 'Parcial',
+
+      'safety.1': '<b>No miris mai el Sol sense filtre homologat.</b> Necessites ulleres d\'eclipsi certificades <b>ISO 12312-2</b>. Les ulleres de sol, radiografies, CD o vidres fumats <b>no serveixen</b> i poden causar ceguesa permanent.',
+      'safety.2': '<b>Només durant la totalitat</b> (entre C2 i C3) pots i has de mirar a ull nu: és l\'únic moment en què es veu la corona. Torna a posar-te el filtre <b>així que aparegui la primera espurna</b>.',
+      'safety.3': 'Càmeres, prismàtics i telescopis necessiten <b>filtre solar davant de l\'objectiu</b>. Un filtre d\'ocular pot rebentar per la calor.',
+      'safety.4': 'A la península l\'eclipsi passa amb el Sol <b>molt baix</b> sobre l\'horitzó oest. Busca un mirador net: un turó, la costa o una plana sense muntanyes a l\'oest. <b>Comprova l\'horitzó el dia abans a la mateixa hora.</b>',
+
+      'tools.ics': '📅 Afegir al calendari',
+      'tools.notify': '🔔 Avisos al mòbil',
+      'tools.share': '🔗 Compartir',
+      'tools.install': '⬇️ Instal·lar l\'app',
+      'tools.notifyOn': '🔔 Avisos activats',
+      'tools.notifyOnBody': 'T\'avisaré a cada fase de l\'eclipsi. Mantén l\'app oberta aquell dia.',
+      'tools.notifyUnsupported': 'El teu navegador no admet notificacions.',
+      'tools.copied': 'Enllaç copiat.',
+      'tools.installHelp': 'A l\'iPhone: prem el botó «Compartir» del Safari i tria «Afegir a la pantalla d\'inici».\nA Android: menú ⋮ → «Instal·lar aplicació».',
+
+      'ics.c1': '🌒 Comença l\'eclipsi solar (C1)',
+      'ics.c1d': 'Posa\'t les ulleres d\'eclipsi ISO 12312-2. {place}',
+      'ics.c2': '🌑 TOTALITAT de l\'eclipsi',
+      'ics.c2d': 'Durada: {dur}. Treu-te el filtre NOMÉS ara.',
+      'ics.max': '☀️ Màxim de l\'eclipsi',
+      'ics.maxd': 'Magnitud {mag} · {pct} % cobert',
+      'ics.c4': '🌘 Fi de l\'eclipsi (C4)',
+      'ics.c4d': 'Últim contacte.',
+      'share.total': 'Eclipsi total el 12/08/2026 des de {place}: totalitat a les {time} durant {dur}.',
+      'share.other': 'Eclipsi solar del 12/08/2026 des de {place}.',
+
+      'notif.c1': '🌒 Comença l\'eclipsi', 'notif.c1b': 'Primer contacte. Posa\'t el filtre solar.',
+      'notif.c2pre': '⚡ Totalitat en 1 minut', 'notif.c2preb': 'Prepara\'t. Anell de diamant imminent.',
+      'notif.c2': '🌑 TOTALITAT!', 'notif.c2b': 'Treu-te el filtre i mira la corona!',
+      'notif.c3': '⚠️ Fi de la totalitat', 'notif.c3b': 'FILTRE POSAT JA!',
+      'notif.c4': '🌘 Fi de l\'eclipsi', 'notif.c4b': 'Últim contacte. Fins al 2 d\'agost del 2027.',
+
+      'dock.ar': 'Mode Realitat Augmentada',
+      'ar.track': 'Trajectòria',
+      'ar.disk': 'Disc solar',
+      'ar.cal': '🎯 Calibrar amb el Sol',
+      'ar.hintDefault': 'Apunta el mòbil cap on marca la fletxa',
+      'ar.starting': 'Iniciant la càmera…',
+      'ar.waitSensors': 'Esperant els sensors d\'orientació… mou una mica el mòbil.',
+      'ar.moveCompass': 'Mou el mòbil per activar la brúixola.',
+      'ar.relative': '⚠️ El teu mòbil no dóna <b>brúixola absoluta</b>: el rumb pot estar girat. Prem <b>Calibrar</b> i marca on és el Sol.',
+      'ar.totality': '🌑 <b>TOTALITAT</b> — treu-te el filtre i mira directament',
+      'ar.soon': '⚡ Totalitat imminent — <b>prepara\'t</b>',
+      'ar.partial': '⛔ Eclipsi parcial en curs — <b>NO miris sense filtre ISO 12312-2</b>',
+      'ar.belowHorizon': 'El Sol és sota l\'horitzó. La retícula marca on serà.',
+      'ar.normal': 'La línia taronja és el recorregut del Sol durant l\'eclipsi. ⛔ No miris el Sol sense filtre.',
+      'ar.calibHint': '🎯 Apunta amb la retícula al <b>Sol de veritat</b> i toca la pantalla. Si no el veus, fes servir una referència coneguda.',
+      'ar.calibDone': '✅ Brúixola corregida <b>{off}°</b>. Es recorda per a la propera vegada.',
+      'ar.calibCancel': 'Calibratge cancel·lat.',
+      'ar.calibReset': 'Correcció de brúixola reiniciada.',
+      'ar.noCamera': '⚠️ Sense accés a la càmera.<br>Només es mostra la superposició.',
+      'ar.noSensors': 'Sense permís per als sensors d\'orientació. A l\'iPhone, recarrega i accepta l\'avís de «Moviment i orientació».',
+      'ar.sun': '☀ SOL',
+      'ar.sunBelow': '☀ SOL (sota l\'horitzó)',
+      'ar.turnHere': 'Gira cap aquí',
+      'ar.covered': 'Cobert',
+      'ar.in': 'en',
+      'ar.finished': 'Eclipsi acabat',
+      'ar.relTag': 'brúixola relativa',
+
+      'footer': 'Càlculs derivats dels <b>elements besselians de la NASA/GSFC</b> (F. Espenak), efemèrides VSOP87/ELP2000-85, ΔT = 71,4 s. Tot es calcula al teu dispositiu, sense servidor.<br>Verificat contra les dades de l\'<b>IGN</b> (Oviedo: magnitud 1,015, totalitat 1m 48s).<br><br>Fet amb estima per a qui fa dècades que espera aquest dia. ☀️🌑',
+
+      'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'],
+      'mark.totality': 'TOTALITAT'
+    },
+
+    /* ================= CASTELLANO ================= */
+    es: {
+      'html.lang': 'es',
+      'locale': 'es-ES',
+      'doc.title': 'Eclipse AR 2026 · 12 de agosto',
+
+      'app.kicker': 'Eclipse Solar Total',
+      'app.title': '12 de agosto<br>de 2026',
+      'app.subtitle': 'El primer eclipse total visible desde la península ibérica en más de un siglo',
+      'app.geo': 'Usar mi ubicación GPS',
+      'app.geoActive': 'Ubicación GPS activa',
+      'app.geoLocating': 'Localizando…',
+      'app.geoError': 'No se pudo obtener la ubicación: ',
+      'app.geoHttps': 'Recuerda que el GPS requiere HTTPS.',
+      'app.geoUnsupported': 'Tu navegador no soporta geolocalización.',
+      'app.myLocation': 'Mi ubicación',
+      'app.mapPoint': 'Punto del mapa',
+
+      'card.phases': 'Fases del eclipse en tu posición',
+      'card.sim': 'Simulación en tiempo real',
+      'card.sun': 'Dónde está el Sol ahora mismo',
+      'card.local': 'Circunstancias locales',
+      'card.band': 'Franja de totalidad',
+      'card.cities': 'Ciudades de referencia',
+      'card.safety': 'Seguridad y consejos',
+      'card.tools': 'Herramientas',
+
+      'ro.mag': 'Magnitud',
+      'ro.obs': 'Sol cubierto',
+      'ro.phase': 'Fase',
+      'ro.total': 'TOTAL',
+      'ro.partial': 'Parcial',
+      'ro.before': 'Aún no',
+      'ro.after': 'Terminado',
+
+      'scrub.explore': 'Explorar el eclipse',
+      'scrub.live': 'EN VIVO',
+      'scrub.drag': 'Arrastra para adelantar / retroceder',
+      'scrub.back': 'Volver a directo',
+
+      'sun.az': 'Azimut (desde el Norte)',
+      'sun.alt': 'Altura sobre el horizonte',
+      'sun.dir': 'Orientación',
+      'sun.set': 'Ocaso hoy',
+      'sun.below': '(bajo el horizonte)',
+      'sun.note': 'La brújula muestra el <b>Norte arriba</b>; el borde es el horizonte y el centro, el cenit. La línea naranja es el recorrido que hará el Sol durante el eclipse, y el punto blanco marca el instante del máximo.',
+
+      'legend.center': 'Línea central',
+      'legend.band': 'Banda de totalidad',
+      'legend.you': 'Tu posición',
+      'map.note': 'La línea central más próxima está a <b>{km} km</b> hacia el <b>{dir}</b> ({lat}°, {lon}°). Toca el mapa para calcular cualquier otro punto.',
+      'map.noteSimple': 'Toca el mapa para calcular las circunstancias en cualquier punto.',
+      'map.offline': 'Mapa no disponible sin conexión.',
+
+      'cities.note': 'En <b>naranja</b>, las que están dentro de la franja de totalidad.',
+
+      'phases.note': 'Horas en tu zona horaria local. «Alt» es la altura del Sol sobre el horizonte en ese instante.',
+      'phases.noTotality': 'Sin fase de totalidad en esta ubicación: el eclipse será parcial y <b>nunca</b> podrás quitarte el filtro.',
+
+      'phase.c1': 'C1 · Primer contacto',
+      'phase.c1d': 'La Luna toca el borde del Sol. Empieza el eclipse parcial. <b>Filtro puesto.</b>',
+      'phase.c2': 'C2 · Inicio de la totalidad',
+      'phase.c2d': 'Anillo de diamante y perlas de Baily. <b>Ya puedes quitarte el filtro.</b>',
+      'phase.max': 'Máximo del eclipse',
+      'phase.maxd': 'Momento álgido. Corona solar, planetas y estrellas visibles.',
+      'phase.c3': 'C3 · Fin de la totalidad',
+      'phase.c3d': 'Reaparece el Sol. <b>Filtro puesto YA</b>, antes del primer destello.',
+      'phase.c4': 'C4 · Último contacto',
+      'phase.c4d': 'La Luna abandona el disco solar. Fin del eclipse.',
+
+      'cd.c1': 'Faltan para el INICIO del eclipse (C1)',
+      'cd.c2': '⚡ Faltan para la TOTALIDAD (C2)',
+      'cd.max': 'Faltan para el MÁXIMO del eclipse',
+      'cd.c3': '🔴 Queda de TOTALIDAD — ¡mira ahora!',
+      'cd.c4': 'Queda para el FIN del eclipse (C4)',
+      'cd.done': '✨ El eclipse ha terminado',
+      'cd.notVisible': 'Eclipse no visible desde aquí',
+      'cd.days': 'Días', 'cd.hours': 'Horas', 'cd.min': 'Min', 'cd.sec': 'Seg',
+
+      'alert.notVisible': 'Desde <b>{place}</b> este eclipse <b>no es visible</b>. La sombra de la Luna no pasa por aquí.',
+      'alert.total': '<b>¡Estás dentro de la franja de totalidad!</b> Verás la corona solar durante <b>{dur}</b> a las <b>{time}</b>.',
+      'alert.partial': 'Desde aquí el eclipse será <b>parcial</b> ({pct} % del Sol cubierto). La línea central de totalidad pasa a <b>{km} km</b> hacia el <b>{dir}</b>. Merece muchísimo la pena desplazarse: un 99 % parcial <i>no</i> se parece en nada a la totalidad.',
+      'alert.belowHorizon': 'El máximo del eclipse ocurre <b>con el Sol ya puesto</b> en tu ubicación. Necesitas desplazarte al oeste o al norte.',
+      'alert.veryLow': 'El Sol estará a solo <b>{alt}°</b> de altura en el máximo — poco más que el ancho de tres dedos con el brazo extendido. Necesitas un horizonte oeste <b>completamente despejado</b> (costa, mirador o llanura).',
+      'alert.low': 'El Sol estará bajo, a <b>{alt}°</b> de altura en el máximo. Busca un lugar con el horizonte oeste libre de montañas y edificios.',
+      'alert.sunset': 'El Sol se pondrá <b>antes de que acabe</b> el eclipse: se ocultará todavía mordido por la Luna. Un espectáculo fotográfico brutal.',
+
+      'stat.type': 'Tipo de eclipse',
+      'stat.totality': 'Duración de la totalidad',
+      'stat.mag': 'Magnitud máxima',
+      'stat.obs': 'Sol cubierto (área)',
+      'stat.duration': 'Duración total del evento',
+      'stat.altMax': 'Altura del Sol en el máximo',
+      'stat.azMax': 'Azimut en el máximo',
+      'stat.ratio': 'Tamaño Luna / Sol',
+      'stat.noData': 'Sin datos.',
+      'badge.total': 'Total', 'badge.annular': 'Anular', 'badge.partial': 'Parcial',
+
+      'safety.1': '<b>Nunca mires al Sol sin filtro homologado.</b> Necesitas gafas de eclipse certificadas <b>ISO 12312-2</b>. Las gafas de sol, radiografías, CDs o cristales ahumados <b>no sirven</b> y pueden causar ceguera permanente.',
+      'safety.2': '<b>Solo durante la totalidad</b> (entre C2 y C3) puedes y debes mirar a simple vista: es el único momento en que se ve la corona. Vuelve a ponerte el filtro <b>en cuanto asome el primer destello</b>.',
+      'safety.3': 'Cámaras, prismáticos y telescopios necesitan <b>filtro solar delante del objetivo</b>. Un filtro de ocular puede reventar por el calor.',
+      'safety.4': 'En la península el eclipse ocurre con el Sol <b>muy bajo</b> sobre el horizonte oeste. Busca un mirador despejado: una colina, la costa o un llano sin montañas al oeste. <b>Comprueba el horizonte el día antes a la misma hora.</b>',
+
+      'tools.ics': '📅 Añadir al calendario',
+      'tools.notify': '🔔 Avisos en el móvil',
+      'tools.share': '🔗 Compartir',
+      'tools.install': '⬇️ Instalar la app',
+      'tools.notifyOn': '🔔 Avisos activados',
+      'tools.notifyOnBody': 'Te avisaré en cada fase del eclipse. Mantén la app abierta ese día.',
+      'tools.notifyUnsupported': 'Tu navegador no soporta notificaciones.',
+      'tools.copied': 'Enlace copiado.',
+      'tools.installHelp': 'En iPhone: pulsa el botón «Compartir» de Safari y elige «Añadir a pantalla de inicio».\nEn Android: menú ⋮ → «Instalar aplicación».',
+
+      'ics.c1': '🌒 Empieza el eclipse solar (C1)',
+      'ics.c1d': 'Ponte las gafas de eclipse ISO 12312-2. {place}',
+      'ics.c2': '🌑 TOTALIDAD del eclipse',
+      'ics.c2d': 'Duración: {dur}. Quítate el filtro SOLO ahora.',
+      'ics.max': '☀️ Máximo del eclipse',
+      'ics.maxd': 'Magnitud {mag} · {pct} % cubierto',
+      'ics.c4': '🌘 Fin del eclipse (C4)',
+      'ics.c4d': 'Último contacto.',
+      'share.total': 'Eclipse total el 12/08/2026 desde {place}: totalidad a las {time} durante {dur}.',
+      'share.other': 'Eclipse solar del 12/08/2026 desde {place}.',
+
+      'notif.c1': '🌒 Empieza el eclipse', 'notif.c1b': 'Primer contacto. Ponte el filtro solar.',
+      'notif.c2pre': '⚡ Totalidad en 1 minuto', 'notif.c2preb': 'Prepárate. Anillo de diamante inminente.',
+      'notif.c2': '🌑 ¡TOTALIDAD!', 'notif.c2b': '¡Quítate el filtro y mira la corona!',
+      'notif.c3': '⚠️ Fin de la totalidad', 'notif.c3b': '¡FILTRO PUESTO YA!',
+      'notif.c4': '🌘 Fin del eclipse', 'notif.c4b': 'Último contacto. Hasta el 2 de agosto de 2027.',
+
+      'dock.ar': 'Modo Realidad Aumentada',
+      'ar.track': 'Trayectoria',
+      'ar.disk': 'Disco solar',
+      'ar.cal': '🎯 Calibrar con el Sol',
+      'ar.hintDefault': 'Apunta el móvil hacia donde marca la flecha',
+      'ar.starting': 'Iniciando cámara…',
+      'ar.waitSensors': 'Esperando a los sensores de orientación… mueve un poco el móvil.',
+      'ar.moveCompass': 'Mueve el móvil para activar la brújula.',
+      'ar.relative': '⚠️ Tu móvil no da <b>brújula absoluta</b>: el rumbo puede estar girado. Pulsa <b>Calibrar</b> y marca dónde está el Sol.',
+      'ar.totality': '🌑 <b>TOTALIDAD</b> — quítate el filtro y mira directamente',
+      'ar.soon': '⚡ Totalidad inminente — <b>prepárate</b>',
+      'ar.partial': '⛔ Eclipse parcial en curso — <b>NO mires sin filtro ISO 12312-2</b>',
+      'ar.belowHorizon': 'El Sol está bajo el horizonte. La retícula marca dónde estará.',
+      'ar.normal': 'La línea naranja es el recorrido del Sol durante el eclipse. ⛔ No mires al Sol sin filtro.',
+      'ar.calibHint': '🎯 Apunta con la retícula al <b>Sol de verdad</b> y toca la pantalla. Si no lo ves, usa una referencia conocida.',
+      'ar.calibDone': '✅ Brújula corregida <b>{off}°</b>. Se recuerda para la próxima vez.',
+      'ar.calibCancel': 'Calibración cancelada.',
+      'ar.calibReset': 'Corrección de brújula reiniciada.',
+      'ar.noCamera': '⚠️ Sin acceso a la cámara.<br>Se muestra solo la superposición.',
+      'ar.noSensors': 'Sin permiso para los sensores de orientación. En iPhone, recarga y acepta el aviso de «Movimiento y orientación».',
+      'ar.sun': '☀ SOL',
+      'ar.sunBelow': '☀ SOL (bajo el horizonte)',
+      'ar.turnHere': 'Gira hacia aquí',
+      'ar.covered': 'Cubierto',
+      'ar.in': 'en',
+      'ar.finished': 'Eclipse terminado',
+      'ar.relTag': 'brújula relativa',
+
+      'footer': 'Cálculos derivados de los <b>elementos besselianos de la NASA/GSFC</b> (F. Espenak), efemérides VSOP87/ELP2000-85, ΔT = 71,4 s. Todo se calcula en tu dispositivo, sin servidor.<br>Verificado contra los datos del <b>IGN</b> (Oviedo: magnitud 1,015, totalidad 1m 48s).<br><br>Hecho con cariño para los que llevan décadas esperando este día. ☀️🌑',
+
+      'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'],
+      'mark.totality': 'TOTALIDAD'
+    },
+
+    /* ================= ENGLISH ================= */
+    en: {
+      'html.lang': 'en',
+      'locale': 'en-GB',
+      'doc.title': 'Eclipse AR 2026 · 12 August',
+
+      'app.kicker': 'Total Solar Eclipse',
+      'app.title': '12 August<br>2026',
+      'app.subtitle': 'The first total eclipse visible from the Iberian Peninsula in over a century',
+      'app.geo': 'Use my GPS location',
+      'app.geoActive': 'GPS location active',
+      'app.geoLocating': 'Locating…',
+      'app.geoError': 'Could not get your location: ',
+      'app.geoHttps': 'Remember that GPS requires HTTPS.',
+      'app.geoUnsupported': 'Your browser does not support geolocation.',
+      'app.myLocation': 'My location',
+      'app.mapPoint': 'Map point',
+
+      'card.phases': 'Eclipse phases at your location',
+      'card.sim': 'Live simulation',
+      'card.sun': 'Where the Sun is right now',
+      'card.local': 'Local circumstances',
+      'card.band': 'Path of totality',
+      'card.cities': 'Reference cities',
+      'card.safety': 'Safety and tips',
+      'card.tools': 'Tools',
+
+      'ro.mag': 'Magnitude',
+      'ro.obs': 'Sun covered',
+      'ro.phase': 'Phase',
+      'ro.total': 'TOTAL',
+      'ro.partial': 'Partial',
+      'ro.before': 'Not yet',
+      'ro.after': 'Over',
+
+      'scrub.explore': 'Explore the eclipse',
+      'scrub.live': 'LIVE',
+      'scrub.drag': 'Drag to skip forward / back',
+      'scrub.back': 'Back to live',
+
+      'sun.az': 'Azimuth (from North)',
+      'sun.alt': 'Altitude above horizon',
+      'sun.dir': 'Direction',
+      'sun.set': 'Sunset today',
+      'sun.below': '(below the horizon)',
+      'sun.note': 'The compass shows <b>North at the top</b>; the rim is the horizon and the centre is the zenith. The orange line is the path the Sun will follow during the eclipse, and the white dot marks the moment of maximum.',
+
+      'legend.center': 'Central line',
+      'legend.band': 'Path of totality',
+      'legend.you': 'Your position',
+      'map.note': 'The nearest central line is <b>{km} km</b> to the <b>{dir}</b> ({lat}°, {lon}°). Tap the map to compute any other point.',
+      'map.noteSimple': 'Tap the map to compute circumstances anywhere.',
+      'map.offline': 'Map unavailable offline.',
+
+      'cities.note': 'In <b>orange</b>, those inside the path of totality.',
+
+      'phases.note': 'Times in your local time zone. «Alt» is the Sun\'s altitude above the horizon at that instant.',
+      'phases.noTotality': 'No totality at this location: the eclipse will be partial and you must <b>never</b> remove your filter.',
+
+      'phase.c1': 'C1 · First contact',
+      'phase.c1d': 'The Moon touches the Sun\'s edge. The partial eclipse begins. <b>Filter on.</b>',
+      'phase.c2': 'C2 · Totality begins',
+      'phase.c2d': 'Diamond ring and Baily\'s beads. <b>You may now remove the filter.</b>',
+      'phase.max': 'Maximum eclipse',
+      'phase.maxd': 'The peak. Solar corona, planets and stars visible.',
+      'phase.c3': 'C3 · Totality ends',
+      'phase.c3d': 'The Sun reappears. <b>Filter back on NOW</b>, before the first flash.',
+      'phase.c4': 'C4 · Last contact',
+      'phase.c4d': 'The Moon leaves the solar disc. End of the eclipse.',
+
+      'cd.c1': 'Until the eclipse BEGINS (C1)',
+      'cd.c2': '⚡ Until TOTALITY (C2)',
+      'cd.max': 'Until MAXIMUM eclipse',
+      'cd.c3': '🔴 TOTALITY remaining — look now!',
+      'cd.c4': 'Until the eclipse ENDS (C4)',
+      'cd.done': '✨ The eclipse is over',
+      'cd.notVisible': 'Eclipse not visible from here',
+      'cd.days': 'Days', 'cd.hours': 'Hours', 'cd.min': 'Min', 'cd.sec': 'Sec',
+
+      'alert.notVisible': 'From <b>{place}</b> this eclipse is <b>not visible</b>. The Moon\'s shadow does not pass here.',
+      'alert.total': '<b>You are inside the path of totality!</b> You will see the solar corona for <b>{dur}</b> at <b>{time}</b>.',
+      'alert.partial': 'From here the eclipse will be <b>partial</b> ({pct} % of the Sun covered). The central line of totality passes <b>{km} km</b> to the <b>{dir}</b>. It is absolutely worth travelling: a 99 % partial eclipse is <i>nothing</i> like totality.',
+      'alert.belowHorizon': 'Maximum eclipse happens <b>after sunset</b> at your location. You need to move west or north.',
+      'alert.veryLow': 'The Sun will be only <b>{alt}°</b> high at maximum — barely three finger widths at arm\'s length. You need a <b>completely clear</b> western horizon (coast, viewpoint or open plain).',
+      'alert.low': 'The Sun will be low, <b>{alt}°</b> high at maximum. Find a spot with the western horizon free of mountains and buildings.',
+      'alert.sunset': 'The Sun will set <b>before the eclipse ends</b>: it will disappear still bitten by the Moon. A spectacular photo opportunity.',
+
+      'stat.type': 'Eclipse type',
+      'stat.totality': 'Duration of totality',
+      'stat.mag': 'Maximum magnitude',
+      'stat.obs': 'Sun covered (area)',
+      'stat.duration': 'Total event duration',
+      'stat.altMax': 'Sun altitude at maximum',
+      'stat.azMax': 'Azimuth at maximum',
+      'stat.ratio': 'Moon / Sun size',
+      'stat.noData': 'No data.',
+      'badge.total': 'Total', 'badge.annular': 'Annular', 'badge.partial': 'Partial',
+
+      'safety.1': '<b>Never look at the Sun without a certified filter.</b> You need <b>ISO 12312-2</b> certified eclipse glasses. Sunglasses, X-ray film, CDs or smoked glass <b>do not work</b> and can cause permanent blindness.',
+      'safety.2': '<b>Only during totality</b> (between C2 and C3) can and should you look with the naked eye: it is the only moment the corona is visible. Put the filter back on <b>the instant the first flash appears</b>.',
+      'safety.3': 'Cameras, binoculars and telescopes need a <b>solar filter in front of the objective</b>. An eyepiece filter can shatter from the heat.',
+      'safety.4': 'In Iberia the eclipse happens with the Sun <b>very low</b> over the western horizon. Find a clear viewpoint: a hill, the coast or an open plain with no mountains to the west. <b>Check your horizon the day before at the same time.</b>',
+
+      'tools.ics': '📅 Add to calendar',
+      'tools.notify': '🔔 Phone alerts',
+      'tools.share': '🔗 Share',
+      'tools.install': '⬇️ Install the app',
+      'tools.notifyOn': '🔔 Alerts enabled',
+      'tools.notifyOnBody': 'I will alert you at every eclipse phase. Keep the app open that day.',
+      'tools.notifyUnsupported': 'Your browser does not support notifications.',
+      'tools.copied': 'Link copied.',
+      'tools.installHelp': 'On iPhone: tap Safari\'s «Share» button and choose «Add to Home Screen».\nOn Android: menu ⋮ → «Install app».',
+
+      'ics.c1': '🌒 Solar eclipse begins (C1)',
+      'ics.c1d': 'Put on your ISO 12312-2 eclipse glasses. {place}',
+      'ics.c2': '🌑 TOTALITY',
+      'ics.c2d': 'Duration: {dur}. Remove the filter ONLY now.',
+      'ics.max': '☀️ Maximum eclipse',
+      'ics.maxd': 'Magnitude {mag} · {pct} % covered',
+      'ics.c4': '🌘 Eclipse ends (C4)',
+      'ics.c4d': 'Last contact.',
+      'share.total': 'Total eclipse on 12/08/2026 from {place}: totality at {time} lasting {dur}.',
+      'share.other': 'Solar eclipse of 12/08/2026 from {place}.',
+
+      'notif.c1': '🌒 Eclipse begins', 'notif.c1b': 'First contact. Put on your solar filter.',
+      'notif.c2pre': '⚡ Totality in 1 minute', 'notif.c2preb': 'Get ready. Diamond ring imminent.',
+      'notif.c2': '🌑 TOTALITY!', 'notif.c2b': 'Remove the filter and look at the corona!',
+      'notif.c3': '⚠️ Totality ending', 'notif.c3b': 'FILTER BACK ON NOW!',
+      'notif.c4': '🌘 Eclipse over', 'notif.c4b': 'Last contact. See you on 2 August 2027.',
+
+      'dock.ar': 'Augmented Reality mode',
+      'ar.track': 'Path',
+      'ar.disk': 'Solar disc',
+      'ar.cal': '🎯 Calibrate on the Sun',
+      'ar.hintDefault': 'Point your phone where the arrow shows',
+      'ar.starting': 'Starting camera…',
+      'ar.waitSensors': 'Waiting for orientation sensors… move the phone a little.',
+      'ar.moveCompass': 'Move the phone to wake the compass.',
+      'ar.relative': '⚠️ Your phone has no <b>absolute compass</b>: the heading may be rotated. Tap <b>Calibrate</b> and mark where the Sun is.',
+      'ar.totality': '🌑 <b>TOTALITY</b> — remove the filter and look directly',
+      'ar.soon': '⚡ Totality imminent — <b>get ready</b>',
+      'ar.partial': '⛔ Partial eclipse in progress — <b>do NOT look without an ISO 12312-2 filter</b>',
+      'ar.belowHorizon': 'The Sun is below the horizon. The reticle marks where it will be.',
+      'ar.normal': 'The orange line is the Sun\'s path during the eclipse. ⛔ Never look at the Sun without a filter.',
+      'ar.calibHint': '🎯 Aim the reticle at the <b>real Sun</b> and tap the screen. If you cannot see it, use a known landmark.',
+      'ar.calibDone': '✅ Compass corrected by <b>{off}°</b>. Remembered for next time.',
+      'ar.calibCancel': 'Calibration cancelled.',
+      'ar.calibReset': 'Compass correction reset.',
+      'ar.noCamera': '⚠️ No camera access.<br>Showing the overlay only.',
+      'ar.noSensors': 'No permission for orientation sensors. On iPhone, reload and accept the «Motion & Orientation» prompt.',
+      'ar.sun': '☀ SUN',
+      'ar.sunBelow': '☀ SUN (below horizon)',
+      'ar.turnHere': 'Turn this way',
+      'ar.covered': 'Covered',
+      'ar.in': 'in',
+      'ar.finished': 'Eclipse over',
+      'ar.relTag': 'relative compass',
+
+      'footer': 'Calculations derived from <b>NASA/GSFC Besselian elements</b> (F. Espenak), VSOP87/ELP2000-85 ephemerides, ΔT = 71.4 s. Everything is computed on your device, with no server.<br>Verified against <b>IGN</b> data (Oviedo: magnitude 1.015, totality 1m 48s).<br><br>Made with care for everyone who has waited decades for this day. ☀️🌑',
+
+      'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'],
+      'mark.totality': 'TOTALITY'
+    },
+
+    /* ================= FRANÇAIS ================= */
+    fr: {
+      'html.lang': 'fr',
+      'locale': 'fr-FR',
+      'doc.title': 'Éclipse AR 2026 · 12 août',
+
+      'app.kicker': 'Éclipse Solaire Totale',
+      'app.title': '12 août<br>2026',
+      'app.subtitle': 'La première éclipse totale visible depuis la péninsule Ibérique en plus d\'un siècle',
+      'app.geo': 'Utiliser ma position GPS',
+      'app.geoActive': 'Position GPS active',
+      'app.geoLocating': 'Localisation…',
+      'app.geoError': 'Impossible d\'obtenir la position : ',
+      'app.geoHttps': 'Le GPS nécessite HTTPS.',
+      'app.geoUnsupported': 'Votre navigateur ne prend pas en charge la géolocalisation.',
+      'app.myLocation': 'Ma position',
+      'app.mapPoint': 'Point de la carte',
+
+      'card.phases': 'Phases de l\'éclipse à votre position',
+      'card.sim': 'Simulation en temps réel',
+      'card.sun': 'Où se trouve le Soleil en ce moment',
+      'card.local': 'Circonstances locales',
+      'card.band': 'Bande de totalité',
+      'card.cities': 'Villes de référence',
+      'card.safety': 'Sécurité et conseils',
+      'card.tools': 'Outils',
+
+      'ro.mag': 'Magnitude',
+      'ro.obs': 'Soleil couvert',
+      'ro.phase': 'Phase',
+      'ro.total': 'TOTALE',
+      'ro.partial': 'Partielle',
+      'ro.before': 'Pas encore',
+      'ro.after': 'Terminée',
+
+      'scrub.explore': 'Explorer l\'éclipse',
+      'scrub.live': 'EN DIRECT',
+      'scrub.drag': 'Faites glisser pour avancer / reculer',
+      'scrub.back': 'Revenir au direct',
+
+      'sun.az': 'Azimut (depuis le Nord)',
+      'sun.alt': 'Hauteur au-dessus de l\'horizon',
+      'sun.dir': 'Orientation',
+      'sun.set': 'Coucher du soleil aujourd\'hui',
+      'sun.below': '(sous l\'horizon)',
+      'sun.note': 'La boussole indique le <b>Nord en haut</b> ; le bord est l\'horizon et le centre, le zénith. La ligne orange est la trajectoire que suivra le Soleil pendant l\'éclipse, et le point blanc marque l\'instant du maximum.',
+
+      'legend.center': 'Ligne centrale',
+      'legend.band': 'Bande de totalité',
+      'legend.you': 'Votre position',
+      'map.note': 'La ligne centrale la plus proche est à <b>{km} km</b> vers le <b>{dir}</b> ({lat}°, {lon}°). Touchez la carte pour calculer n\'importe quel autre point.',
+      'map.noteSimple': 'Touchez la carte pour calculer les circonstances en tout point.',
+      'map.offline': 'Carte indisponible hors connexion.',
+
+      'cities.note': 'En <b>orange</b>, celles situées dans la bande de totalité.',
+
+      'phases.note': 'Heures dans votre fuseau horaire local. « Alt » est la hauteur du Soleil au-dessus de l\'horizon à cet instant.',
+      'phases.noTotality': 'Pas de totalité à cet endroit : l\'éclipse sera partielle et vous ne devrez <b>jamais</b> retirer votre filtre.',
+
+      'phase.c1': 'C1 · Premier contact',
+      'phase.c1d': 'La Lune touche le bord du Soleil. L\'éclipse partielle commence. <b>Filtre en place.</b>',
+      'phase.c2': 'C2 · Début de la totalité',
+      'phase.c2d': 'Anneau de diamant et grains de Baily. <b>Vous pouvez retirer le filtre.</b>',
+      'phase.max': 'Maximum de l\'éclipse',
+      'phase.maxd': 'Le point culminant. Couronne solaire, planètes et étoiles visibles.',
+      'phase.c3': 'C3 · Fin de la totalité',
+      'phase.c3d': 'Le Soleil réapparaît. <b>Remettez le filtre MAINTENANT</b>, avant le premier éclat.',
+      'phase.c4': 'C4 · Dernier contact',
+      'phase.c4d': 'La Lune quitte le disque solaire. Fin de l\'éclipse.',
+
+      'cd.c1': 'Avant le DÉBUT de l\'éclipse (C1)',
+      'cd.c2': '⚡ Avant la TOTALITÉ (C2)',
+      'cd.max': 'Avant le MAXIMUM de l\'éclipse',
+      'cd.c3': '🔴 TOTALITÉ restante — regardez maintenant !',
+      'cd.c4': 'Avant la FIN de l\'éclipse (C4)',
+      'cd.done': '✨ L\'éclipse est terminée',
+      'cd.notVisible': 'Éclipse non visible d\'ici',
+      'cd.days': 'Jours', 'cd.hours': 'Heures', 'cd.min': 'Min', 'cd.sec': 'Sec',
+
+      'alert.notVisible': 'Depuis <b>{place}</b> cette éclipse <b>n\'est pas visible</b>. L\'ombre de la Lune ne passe pas ici.',
+      'alert.total': '<b>Vous êtes dans la bande de totalité !</b> Vous verrez la couronne solaire pendant <b>{dur}</b> à <b>{time}</b>.',
+      'alert.partial': 'D\'ici l\'éclipse sera <b>partielle</b> ({pct} % du Soleil couvert). La ligne centrale de totalité passe à <b>{km} km</b> vers le <b>{dir}</b>. Cela vaut vraiment le déplacement : une éclipse partielle à 99 % n\'a <i>rien</i> à voir avec la totalité.',
+      'alert.belowHorizon': 'Le maximum de l\'éclipse se produit <b>après le coucher du Soleil</b> à votre position. Vous devez vous déplacer vers l\'ouest ou le nord.',
+      'alert.veryLow': 'Le Soleil ne sera qu\'à <b>{alt}°</b> de hauteur au maximum — à peine trois doigts à bout de bras. Il vous faut un horizon ouest <b>totalement dégagé</b> (côte, belvédère ou plaine).',
+      'alert.low': 'Le Soleil sera bas, à <b>{alt}°</b> de hauteur au maximum. Cherchez un endroit avec l\'horizon ouest libre de montagnes et de bâtiments.',
+      'alert.sunset': 'Le Soleil se couchera <b>avant la fin</b> de l\'éclipse : il disparaîtra encore mordu par la Lune. Un spectacle photographique saisissant.',
+
+      'stat.type': 'Type d\'éclipse',
+      'stat.totality': 'Durée de la totalité',
+      'stat.mag': 'Magnitude maximale',
+      'stat.obs': 'Soleil couvert (surface)',
+      'stat.duration': 'Durée totale de l\'événement',
+      'stat.altMax': 'Hauteur du Soleil au maximum',
+      'stat.azMax': 'Azimut au maximum',
+      'stat.ratio': 'Taille Lune / Soleil',
+      'stat.noData': 'Aucune donnée.',
+      'badge.total': 'Totale', 'badge.annular': 'Annulaire', 'badge.partial': 'Partielle',
+
+      'safety.1': '<b>Ne regardez jamais le Soleil sans filtre homologué.</b> Il vous faut des lunettes d\'éclipse certifiées <b>ISO 12312-2</b>. Les lunettes de soleil, radiographies, CD ou verres fumés <b>ne protègent pas</b> et peuvent causer une cécité permanente.',
+      'safety.2': '<b>Uniquement pendant la totalité</b> (entre C2 et C3) vous pouvez et devez regarder à l\'œil nu : c\'est le seul moment où la couronne est visible. Remettez le filtre <b>dès le premier éclat</b>.',
+      'safety.3': 'Appareils photo, jumelles et télescopes ont besoin d\'un <b>filtre solaire devant l\'objectif</b>. Un filtre d\'oculaire peut éclater sous la chaleur.',
+      'safety.4': 'Dans la péninsule Ibérique l\'éclipse se produit avec le Soleil <b>très bas</b> sur l\'horizon ouest. Cherchez un point de vue dégagé : une colline, la côte ou une plaine sans montagnes à l\'ouest. <b>Vérifiez votre horizon la veille à la même heure.</b>',
+
+      'tools.ics': '📅 Ajouter au calendrier',
+      'tools.notify': '🔔 Alertes sur le mobile',
+      'tools.share': '🔗 Partager',
+      'tools.install': '⬇️ Installer l\'app',
+      'tools.notifyOn': '🔔 Alertes activées',
+      'tools.notifyOnBody': 'Je vous préviendrai à chaque phase de l\'éclipse. Gardez l\'app ouverte ce jour-là.',
+      'tools.notifyUnsupported': 'Votre navigateur ne prend pas en charge les notifications.',
+      'tools.copied': 'Lien copié.',
+      'tools.installHelp': 'Sur iPhone : appuyez sur « Partager » dans Safari et choisissez « Sur l\'écran d\'accueil ».\nSur Android : menu ⋮ → « Installer l\'application ».',
+
+      'ics.c1': '🌒 Début de l\'éclipse solaire (C1)',
+      'ics.c1d': 'Mettez vos lunettes d\'éclipse ISO 12312-2. {place}',
+      'ics.c2': '🌑 TOTALITÉ de l\'éclipse',
+      'ics.c2d': 'Durée : {dur}. Retirez le filtre SEULEMENT maintenant.',
+      'ics.max': '☀️ Maximum de l\'éclipse',
+      'ics.maxd': 'Magnitude {mag} · {pct} % couvert',
+      'ics.c4': '🌘 Fin de l\'éclipse (C4)',
+      'ics.c4d': 'Dernier contact.',
+      'share.total': 'Éclipse totale le 12/08/2026 depuis {place} : totalité à {time} pendant {dur}.',
+      'share.other': 'Éclipse solaire du 12/08/2026 depuis {place}.',
+
+      'notif.c1': '🌒 L\'éclipse commence', 'notif.c1b': 'Premier contact. Mettez votre filtre solaire.',
+      'notif.c2pre': '⚡ Totalité dans 1 minute', 'notif.c2preb': 'Préparez-vous. Anneau de diamant imminent.',
+      'notif.c2': '🌑 TOTALITÉ !', 'notif.c2b': 'Retirez le filtre et admirez la couronne !',
+      'notif.c3': '⚠️ Fin de la totalité', 'notif.c3b': 'REMETTEZ LE FILTRE MAINTENANT !',
+      'notif.c4': '🌘 Fin de l\'éclipse', 'notif.c4b': 'Dernier contact. Rendez-vous le 2 août 2027.',
+
+      'dock.ar': 'Mode Réalité Augmentée',
+      'ar.track': 'Trajectoire',
+      'ar.disk': 'Disque solaire',
+      'ar.cal': '🎯 Calibrer sur le Soleil',
+      'ar.hintDefault': 'Pointez le mobile là où la flèche l\'indique',
+      'ar.starting': 'Démarrage de la caméra…',
+      'ar.waitSensors': 'En attente des capteurs d\'orientation… bougez un peu le mobile.',
+      'ar.moveCompass': 'Bougez le mobile pour activer la boussole.',
+      'ar.relative': '⚠️ Votre mobile n\'a pas de <b>boussole absolue</b> : le cap peut être décalé. Appuyez sur <b>Calibrer</b> et marquez où est le Soleil.',
+      'ar.totality': '🌑 <b>TOTALITÉ</b> — retirez le filtre et regardez directement',
+      'ar.soon': '⚡ Totalité imminente — <b>préparez-vous</b>',
+      'ar.partial': '⛔ Éclipse partielle en cours — <b>NE regardez PAS sans filtre ISO 12312-2</b>',
+      'ar.belowHorizon': 'Le Soleil est sous l\'horizon. Le réticule indique où il sera.',
+      'ar.normal': 'La ligne orange est la trajectoire du Soleil pendant l\'éclipse. ⛔ Ne regardez jamais le Soleil sans filtre.',
+      'ar.calibHint': '🎯 Visez le <b>vrai Soleil</b> avec le réticule et touchez l\'écran. Si vous ne le voyez pas, utilisez un repère connu.',
+      'ar.calibDone': '✅ Boussole corrigée de <b>{off}°</b>. Mémorisé pour la prochaine fois.',
+      'ar.calibCancel': 'Calibrage annulé.',
+      'ar.calibReset': 'Correction de boussole réinitialisée.',
+      'ar.noCamera': '⚠️ Pas d\'accès à la caméra.<br>Seule la superposition est affichée.',
+      'ar.noSensors': 'Pas d\'autorisation pour les capteurs d\'orientation. Sur iPhone, rechargez et acceptez l\'invite « Mouvement et orientation ».',
+      'ar.sun': '☀ SOLEIL',
+      'ar.sunBelow': '☀ SOLEIL (sous l\'horizon)',
+      'ar.turnHere': 'Tournez par ici',
+      'ar.covered': 'Couvert',
+      'ar.in': 'dans',
+      'ar.finished': 'Éclipse terminée',
+      'ar.relTag': 'boussole relative',
+
+      'footer': 'Calculs dérivés des <b>éléments besséliens de la NASA/GSFC</b> (F. Espenak), éphémérides VSOP87/ELP2000-85, ΔT = 71,4 s. Tout est calculé sur votre appareil, sans serveur.<br>Vérifié avec les données de l\'<b>IGN</b> (Oviedo : magnitude 1,015, totalité 1m 48s).<br><br>Fait avec soin pour ceux qui attendent ce jour depuis des décennies. ☀️🌑',
+
+      'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'],
+      'mark.totality': 'TOTALITÉ'
+    },
+
+    /* ================= DEUTSCH ================= */
+    de: {
+      'html.lang': 'de',
+      'locale': 'de-DE',
+      'doc.title': 'Eclipse AR 2026 · 12. August',
+
+      'app.kicker': 'Totale Sonnenfinsternis',
+      'app.title': '12. August<br>2026',
+      'app.subtitle': 'Die erste totale Sonnenfinsternis auf der Iberischen Halbinsel seit über einem Jahrhundert',
+      'app.geo': 'Meinen GPS-Standort verwenden',
+      'app.geoActive': 'GPS-Standort aktiv',
+      'app.geoLocating': 'Standort wird ermittelt…',
+      'app.geoError': 'Standort konnte nicht ermittelt werden: ',
+      'app.geoHttps': 'GPS erfordert HTTPS.',
+      'app.geoUnsupported': 'Dein Browser unterstützt keine Standortbestimmung.',
+      'app.myLocation': 'Mein Standort',
+      'app.mapPoint': 'Kartenpunkt',
+
+      'card.phases': 'Finsternisphasen an deinem Standort',
+      'card.sim': 'Simulation in Echtzeit',
+      'card.sun': 'Wo die Sonne gerade steht',
+      'card.local': 'Örtliche Umstände',
+      'card.band': 'Totalitätszone',
+      'card.cities': 'Referenzstädte',
+      'card.safety': 'Sicherheit und Tipps',
+      'card.tools': 'Werkzeuge',
+
+      'ro.mag': 'Größe',
+      'ro.obs': 'Sonne bedeckt',
+      'ro.phase': 'Phase',
+      'ro.total': 'TOTAL',
+      'ro.partial': 'Partiell',
+      'ro.before': 'Noch nicht',
+      'ro.after': 'Vorbei',
+
+      'scrub.explore': 'Finsternis erkunden',
+      'scrub.live': 'LIVE',
+      'scrub.drag': 'Ziehen, um vor- oder zurückzuspulen',
+      'scrub.back': 'Zurück zu live',
+
+      'sun.az': 'Azimut (von Norden)',
+      'sun.alt': 'Höhe über dem Horizont',
+      'sun.dir': 'Richtung',
+      'sun.set': 'Sonnenuntergang heute',
+      'sun.below': '(unter dem Horizont)',
+      'sun.note': 'Der Kompass zeigt <b>Norden oben</b>; der Rand ist der Horizont, die Mitte der Zenit. Die orange Linie ist die Bahn der Sonne während der Finsternis, der weiße Punkt markiert das Maximum.',
+
+      'legend.center': 'Zentrallinie',
+      'legend.band': 'Totalitätszone',
+      'legend.you': 'Dein Standort',
+      'map.note': 'Die nächste Zentrallinie liegt <b>{km} km</b> in Richtung <b>{dir}</b> ({lat}°, {lon}°). Tippe auf die Karte, um einen beliebigen anderen Punkt zu berechnen.',
+      'map.noteSimple': 'Tippe auf die Karte, um die Umstände an jedem Punkt zu berechnen.',
+      'map.offline': 'Karte offline nicht verfügbar.',
+
+      'cities.note': 'In <b>Orange</b> die Städte innerhalb der Totalitätszone.',
+
+      'phases.note': 'Zeiten in deiner lokalen Zeitzone. «Alt» ist die Höhe der Sonne über dem Horizont in diesem Moment.',
+      'phases.noTotality': 'Keine Totalität an diesem Ort: Die Finsternis bleibt partiell und du darfst den Filter <b>niemals</b> abnehmen.',
+
+      'phase.c1': 'C1 · Erster Kontakt',
+      'phase.c1d': 'Der Mond berührt den Sonnenrand. Die partielle Phase beginnt. <b>Filter aufsetzen.</b>',
+      'phase.c2': 'C2 · Beginn der Totalität',
+      'phase.c2d': 'Diamantring und Baily\'sche Perlen. <b>Jetzt darfst du den Filter abnehmen.</b>',
+      'phase.max': 'Maximum der Finsternis',
+      'phase.maxd': 'Der Höhepunkt. Sonnenkorona, Planeten und Sterne sichtbar.',
+      'phase.c3': 'C3 · Ende der Totalität',
+      'phase.c3d': 'Die Sonne kommt zurück. <b>Filter SOFORT wieder auf</b>, vor dem ersten Aufblitzen.',
+      'phase.c4': 'C4 · Letzter Kontakt',
+      'phase.c4d': 'Der Mond verlässt die Sonnenscheibe. Ende der Finsternis.',
+
+      'cd.c1': 'Bis zum BEGINN der Finsternis (C1)',
+      'cd.c2': '⚡ Bis zur TOTALITÄT (C2)',
+      'cd.max': 'Bis zum MAXIMUM der Finsternis',
+      'cd.c3': '🔴 TOTALITÄT verbleibend — jetzt hinschauen!',
+      'cd.c4': 'Bis zum ENDE der Finsternis (C4)',
+      'cd.done': '✨ Die Finsternis ist vorbei',
+      'cd.notVisible': 'Finsternis von hier nicht sichtbar',
+      'cd.days': 'Tage', 'cd.hours': 'Std', 'cd.min': 'Min', 'cd.sec': 'Sek',
+
+      'alert.notVisible': 'Von <b>{place}</b> aus ist diese Finsternis <b>nicht sichtbar</b>. Der Mondschatten zieht hier nicht vorbei.',
+      'alert.total': '<b>Du bist in der Totalitätszone!</b> Du wirst die Sonnenkorona <b>{dur}</b> lang um <b>{time}</b> sehen.',
+      'alert.partial': 'Von hier aus ist die Finsternis <b>partiell</b> ({pct} % der Sonne bedeckt). Die Zentrallinie der Totalität verläuft <b>{km} km</b> in Richtung <b>{dir}</b>. Die Fahrt lohnt sich enorm: 99 % partiell ist <i>nichts</i> im Vergleich zur Totalität.',
+      'alert.belowHorizon': 'Das Maximum tritt an deinem Standort <b>nach Sonnenuntergang</b> ein. Du musst nach Westen oder Norden ausweichen.',
+      'alert.veryLow': 'Die Sonne steht im Maximum nur <b>{alt}°</b> hoch — kaum drei Fingerbreit bei ausgestrecktem Arm. Du brauchst einen <b>völlig freien</b> Westhorizont (Küste, Aussichtspunkt oder Ebene).',
+      'alert.low': 'Die Sonne steht tief, <b>{alt}°</b> hoch im Maximum. Suche einen Ort mit freiem Westhorizont ohne Berge und Gebäude.',
+      'alert.sunset': 'Die Sonne geht <b>vor dem Ende</b> der Finsternis unter: Sie verschwindet noch angebissen vom Mond. Ein grandioses Fotomotiv.',
+
+      'stat.type': 'Art der Finsternis',
+      'stat.totality': 'Dauer der Totalität',
+      'stat.mag': 'Maximale Größe',
+      'stat.obs': 'Sonne bedeckt (Fläche)',
+      'stat.duration': 'Gesamtdauer des Ereignisses',
+      'stat.altMax': 'Sonnenhöhe im Maximum',
+      'stat.azMax': 'Azimut im Maximum',
+      'stat.ratio': 'Größe Mond / Sonne',
+      'stat.noData': 'Keine Daten.',
+      'badge.total': 'Total', 'badge.annular': 'Ringförmig', 'badge.partial': 'Partiell',
+
+      'safety.1': '<b>Schau niemals ohne zertifizierten Filter in die Sonne.</b> Du brauchst eine <b>ISO 12312-2</b> zertifizierte Finsternisbrille. Sonnenbrillen, Röntgenbilder, CDs oder berußtes Glas <b>schützen nicht</b> und können zu dauerhafter Erblindung führen.',
+      'safety.2': '<b>Nur während der Totalität</b> (zwischen C2 und C3) darfst und sollst du mit bloßem Auge hinsehen: Nur dann ist die Korona sichtbar. Setze den Filter <b>beim ersten Aufblitzen sofort</b> wieder auf.',
+      'safety.3': 'Kameras, Ferngläser und Teleskope brauchen einen <b>Sonnenfilter vor dem Objektiv</b>. Ein Okularfilter kann durch die Hitze zerspringen.',
+      'safety.4': 'Auf der Iberischen Halbinsel findet die Finsternis mit <b>sehr tief stehender</b> Sonne über dem Westhorizont statt. Suche einen freien Aussichtspunkt: einen Hügel, die Küste oder eine Ebene ohne Berge im Westen. <b>Prüfe deinen Horizont am Vortag zur selben Uhrzeit.</b>',
+
+      'tools.ics': '📅 Zum Kalender hinzufügen',
+      'tools.notify': '🔔 Handy-Benachrichtigungen',
+      'tools.share': '🔗 Teilen',
+      'tools.install': '⬇️ App installieren',
+      'tools.notifyOn': '🔔 Benachrichtigungen aktiv',
+      'tools.notifyOnBody': 'Ich melde mich bei jeder Phase der Finsternis. Lass die App an diesem Tag geöffnet.',
+      'tools.notifyUnsupported': 'Dein Browser unterstützt keine Benachrichtigungen.',
+      'tools.copied': 'Link kopiert.',
+      'tools.installHelp': 'Auf dem iPhone: In Safari auf «Teilen» tippen und «Zum Home-Bildschirm» wählen.\nAuf Android: Menü ⋮ → «App installieren».',
+
+      'ics.c1': '🌒 Sonnenfinsternis beginnt (C1)',
+      'ics.c1d': 'Setze deine ISO 12312-2 Finsternisbrille auf. {place}',
+      'ics.c2': '🌑 TOTALITÄT der Finsternis',
+      'ics.c2d': 'Dauer: {dur}. Filter NUR jetzt abnehmen.',
+      'ics.max': '☀️ Maximum der Finsternis',
+      'ics.maxd': 'Größe {mag} · {pct} % bedeckt',
+      'ics.c4': '🌘 Ende der Finsternis (C4)',
+      'ics.c4d': 'Letzter Kontakt.',
+      'share.total': 'Totale Sonnenfinsternis am 12.08.2026 von {place}: Totalität um {time} für {dur}.',
+      'share.other': 'Sonnenfinsternis vom 12.08.2026 von {place}.',
+
+      'notif.c1': '🌒 Finsternis beginnt', 'notif.c1b': 'Erster Kontakt. Setze den Sonnenfilter auf.',
+      'notif.c2pre': '⚡ Totalität in 1 Minute', 'notif.c2preb': 'Mach dich bereit. Diamantring steht bevor.',
+      'notif.c2': '🌑 TOTALITÄT!', 'notif.c2b': 'Filter abnehmen und die Korona ansehen!',
+      'notif.c3': '⚠️ Totalität endet', 'notif.c3b': 'FILTER SOFORT WIEDER AUF!',
+      'notif.c4': '🌘 Finsternis vorbei', 'notif.c4b': 'Letzter Kontakt. Bis zum 2. August 2027.',
+
+      'dock.ar': 'Augmented-Reality-Modus',
+      'ar.track': 'Bahn',
+      'ar.disk': 'Sonnenscheibe',
+      'ar.cal': '🎯 An der Sonne kalibrieren',
+      'ar.hintDefault': 'Richte das Handy dorthin, wo der Pfeil zeigt',
+      'ar.starting': 'Kamera wird gestartet…',
+      'ar.waitSensors': 'Warte auf die Orientierungssensoren… bewege das Handy etwas.',
+      'ar.moveCompass': 'Bewege das Handy, um den Kompass zu aktivieren.',
+      'ar.relative': '⚠️ Dein Handy liefert keinen <b>absoluten Kompass</b>: Die Richtung kann verdreht sein. Tippe auf <b>Kalibrieren</b> und markiere, wo die Sonne steht.',
+      'ar.totality': '🌑 <b>TOTALITÄT</b> — Filter abnehmen und direkt hinsehen',
+      'ar.soon': '⚡ Totalität steht bevor — <b>bereitmachen</b>',
+      'ar.partial': '⛔ Partielle Finsternis läuft — <b>NICHT ohne ISO 12312-2 Filter hinsehen</b>',
+      'ar.belowHorizon': 'Die Sonne steht unter dem Horizont. Das Fadenkreuz zeigt, wo sie sein wird.',
+      'ar.normal': 'Die orange Linie ist die Sonnenbahn während der Finsternis. ⛔ Niemals ohne Filter in die Sonne schauen.',
+      'ar.calibHint': '🎯 Ziele mit dem Fadenkreuz auf die <b>echte Sonne</b> und tippe auf den Bildschirm. Wenn du sie nicht siehst, nimm einen bekannten Bezugspunkt.',
+      'ar.calibDone': '✅ Kompass um <b>{off}°</b> korrigiert. Wird für das nächste Mal gemerkt.',
+      'ar.calibCancel': 'Kalibrierung abgebrochen.',
+      'ar.calibReset': 'Kompasskorrektur zurückgesetzt.',
+      'ar.noCamera': '⚠️ Kein Kamerazugriff.<br>Es wird nur die Überlagerung angezeigt.',
+      'ar.noSensors': 'Keine Berechtigung für die Orientierungssensoren. Lade auf dem iPhone neu und akzeptiere die Abfrage «Bewegung & Ausrichtung».',
+      'ar.sun': '☀ SONNE',
+      'ar.sunBelow': '☀ SONNE (unter dem Horizont)',
+      'ar.turnHere': 'Hierhin drehen',
+      'ar.covered': 'Bedeckt',
+      'ar.in': 'in',
+      'ar.finished': 'Finsternis vorbei',
+      'ar.relTag': 'relativer Kompass',
+
+      'footer': 'Berechnungen abgeleitet aus den <b>Besselschen Elementen der NASA/GSFC</b> (F. Espenak), Ephemeriden VSOP87/ELP2000-85, ΔT = 71,4 s. Alles wird auf deinem Gerät berechnet, ohne Server.<br>Geprüft gegen die Daten des <b>IGN</b> (Oviedo: Größe 1,015, Totalität 1m 48s).<br><br>Mit Sorgfalt gemacht für alle, die seit Jahrzehnten auf diesen Tag warten. ☀️🌑',
+
+      'dir': ['N','NNO','NO','ONO','O','OSO','SO','SSO','S','SSW','SW','WSW','W','WNW','NW','NNW'],
+      'mark.totality': 'TOTALITÄT'
+    }
+  };
+
+  const LANGS = ['ca', 'es', 'en', 'fr', 'de'];
+  let current = 'ca';
+
+  try {
+    const saved = localStorage.getItem('eclipse-lang');
+    if (saved && LANGS.indexOf(saved) >= 0) current = saved;
+  } catch (e) {}
+
+  /** Traduce una clave, sustituyendo {marcadores} */
+  function t(key, params) {
+    const table = DICT[current] || DICT.ca;
+    let s = table[key];
+    if (s === undefined) s = (DICT.ca[key] !== undefined ? DICT.ca[key] : key);
+    if (params && typeof s === 'string') {
+      for (const k in params) s = s.split('{' + k + '}').join(params[k]);
+    }
+    return s;
+  }
+
+  /** Punto cardinal para un azimut, en el idioma activo */
+  function cardinal(az) {
+    const names = t('dir');
+    return names[Math.round(az / 22.5) % 16];
+  }
+
+  /** Aplica las cadenas estáticas a todos los [data-i18n] */
+  function applyStatic() {
+    document.documentElement.lang = t('html.lang');
+    document.title = t('doc.title');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.innerHTML = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+    });
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.lang === current);
+      b.setAttribute('aria-pressed', String(b.dataset.lang === current));
+    });
+  }
+
+  const listeners = [];
+  function onChange(fn) { listeners.push(fn); }
+
+  function setLang(lang) {
+    if (LANGS.indexOf(lang) < 0 || lang === current) return;
+    current = lang;
+    try { localStorage.setItem('eclipse-lang', lang); } catch (e) {}
+    applyStatic();
+    listeners.forEach(fn => { try { fn(lang); } catch (e) {} });
+  }
+
+  global.I18N = {
+    t, cardinal, setLang, applyStatic, onChange,
+    get lang() { return current; },
+    get locale() { return t('locale'); },
+    LANGS
+  };
+  global.t = t;
+})(window);

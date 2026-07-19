@@ -8,15 +8,18 @@
      por ubicación, no en cada fotograma.
    · La astronomía (posición solar, estado del eclipse) se refresca 5 veces por
      segundo: el Sol se mueve 0.004°/s, así que es imperceptible.
-   · La orientación del móvil se suaviza con un filtro paso bajo sobre la base
-     de la cámara, con re-ortonormalización. Sin él, el ruido del giroscopio
-     hace temblar todo.
+   · La orientación se suaviza con slerp de cuaterniones en cascada de dos
+     etapas, con constante de tiempo adaptativa según el movimiento REAL
+     (estimado con una referencia lenta que el ruido no desplaza).
+   · Nunca se mezclan la brújula absoluta y la relativa: hacerlo provoca saltos
+     de decenas de grados entre fotogramas.
    · El HUD (DOM) solo se reescribe cuando su texto cambia de verdad.
    ========================================================================= */
 (function (global) {
   'use strict';
 
   const $ = id => document.getElementById(id);
+  const T = (k, p) => I18N.t(k, p);
   const D2R = Math.PI / 180;
 
   // Polyfill mínimo de roundRect para navegadores algo antiguos
@@ -336,10 +339,13 @@
     st: null
   };
 
-  const NAMES = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SO', 270: 'O', 315: 'NO' };
+  const NAMES = () => { const d = I18N.t('dir');
+    return { 0: d[0], 45: d[2], 90: d[4], 135: d[6], 180: d[8], 225: d[10], 270: d[12], 315: d[14] }; };
 
   function buildSky(app) {
-    const key = app.lat.toFixed(5) + ',' + app.lon.toFixed(5);
+    // El idioma entra en la clave: las etiquetas de la rosa de los vientos y
+    // los hitos horarios cambian con él.
+    const key = app.lat.toFixed(5) + ',' + app.lon.toFixed(5) + ',' + I18N.lang;
     if (cache.key === key) return;
     cache.key = key;
 
@@ -347,8 +353,9 @@
     for (let az = 0; az <= 360; az += 3) cache.horizon.push(skyVector(az, 0));
 
     cache.ticks = [];
+    const NM = NAMES();
     for (let az = 0; az < 360; az += 15) {
-      cache.ticks.push({ vec: skyVector(az, 0), label: NAMES[az], big: az % 45 === 0, north: az === 0 });
+      cache.ticks.push({ vec: skyVector(az, 0), label: NM[az], big: az % 45 === 0, north: az === 0 });
     }
 
     cache.track = [];
@@ -366,7 +373,7 @@
         if (!ev) continue;
         const s = Astro.sunAltAz(ev.date, app.lat, app.lon);
         cache.marks.push({
-          label: `${n} ${ev.date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`,
+          label: `${n} ${ev.date.toLocaleTimeString(I18N.locale, { hour: '2-digit', minute: '2-digit' })}`,
           big: n === 'MÁX',
           vec: skyVector(s.az, s.altRefracted)
         });
@@ -458,7 +465,7 @@
 
     const basis = updateBasis(dt);
     if (!basis) {
-      setHint('Esperando a los sensores de orientación… mueve un poco el móvil.', false);
+      setHint(T('ar.waitSensors'), false);
       return;
     }
     lastBasis = basis; lastW2 = w; lastH2 = h;
@@ -554,7 +561,7 @@
 
       g.font = '700 13px -apple-system, sans-serif'; g.textAlign = 'center';
       g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,.75)'; g.lineWidth = 3;
-      const lbl = cache.sunAlt > 0 ? '☀ SOL' : '☀ SOL (bajo el horizonte)';
+      const lbl = cache.sunAlt > 0 ? T('ar.sun') : T('ar.sunBelow');
       g.strokeText(lbl, p.x, p.y - rSun * 3.8);
       g.fillText(lbl, p.x, p.y - rSun * 3.8);
     } else {
@@ -571,8 +578,9 @@
       g.font = '700 13px -apple-system, sans-serif'; g.textAlign = 'center';
       g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,.75)'; g.lineWidth = 3;
       const tx = cx + Math.cos(ang) * (R + 34), ty = cy + Math.sin(ang) * (R + 34);
-      g.strokeText('Gira hacia aquí', tx, ty);
-      g.fillText('Gira hacia aquí', tx, ty);
+      const turn = T('ar.turnHere');
+      g.strokeText(turn, tx, ty);
+      g.fillText(turn, tx, ty);
     }
 
     // ---- Modo calibración: retícula central ----
@@ -637,35 +645,35 @@
         const d = Math.floor(s / 86400); s -= d * 86400;
         const hh = Math.floor(s / 3600); s -= hh * 3600;
         const mm = Math.floor(s / 60); s -= mm * 60;
-        cd = `${nxt[1]} en <b>${d ? d + 'd ' : ''}${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}</b>`;
-      } else cd = 'Eclipse terminado';
+        cd = `${nxt[1]} ${T('ar.in')} <b>${d ? d + 'd ' : ''}${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}</b>`;
+      } else cd = T('ar.finished');
     }
 
     const srcTag = ar.source === 'ios' || ar.source === 'absolute' ? ''
-                 : ar.source === 'relative' ? ' <span style="color:#ffca4a">brújula relativa</span>' : '';
+                 : ar.source === 'relative' ? ` <span style="color:#ffca4a">${T('ar.relTag')}</span>` : '';
     const offTag = ar.headingOffset ? ` <span style="color:#46e39b">${ar.headingOffset > 0 ? '+' : ''}${ar.headingOffset.toFixed(0)}°</span>` : '';
     const info =
       `<div>Az <b>${cache.sunAz.toFixed(1)}°</b> · Alt <b>${cache.sunAlt.toFixed(1)}°</b>${offTag}</div>` +
-      (st && !st.outOfRange ? `<div>Cubierto <b>${(st.obscuration * 100).toFixed(1)} %</b></div>` : '') +
+      (st && !st.outOfRange ? `<div>${T('ar.covered')} <b>${(st.obscuration * 100).toFixed(1)} %</b></div>` : '') +
       `<div>${cd}${srcTag}</div>`;
     if (info !== lastInfo) { lastInfo = info; $('arInfo').innerHTML = info; }
 
     if (ar.calibrating) {
-      setHint('🎯 Apunta con la retícula al <b>Sol de verdad</b> y toca la pantalla. Si no lo ves, usa una referencia conocida.', false);
+      setHint(T('ar.calibHint'), false);
     } else if (!ar.haveOrientation) {
-      setHint('Mueve el móvil para activar la brújula.', false);
+      setHint(T('ar.moveCompass'), false);
     } else if (ar.source === 'relative') {
-      setHint('⚠️ Tu móvil no da <b>brújula absoluta</b>: el rumbo puede estar girado. Pulsa <b>Calibrar</b> y marca dónde está el Sol.', false);
+      setHint(T('ar.relative'), false);
     } else if (lc && lc.c2 && t >= lc.c2.date && t <= lc.c3.date) {
-      setHint('🌑 <b>TOTALIDAD</b> — quítate el filtro y mira directamente', true);
+      setHint(T('ar.totality'), true);
     } else if (lc && lc.c2 && (lc.c2.date - t) > 0 && (lc.c2.date - t) < 120000) {
-      setHint('⚡ Totalidad inminente — <b>prepárate</b>', true);
+      setHint(T('ar.soon'), true);
     } else if (st && st.magnitude > 0) {
-      setHint('⛔ Eclipse parcial en curso — <b>NO mires sin filtro ISO 12312-2</b>', false);
+      setHint(T('ar.partial'), false);
     } else if (cache.sunAlt < 0) {
-      setHint('El Sol está bajo el horizonte. La retícula marca dónde estará.', false);
+      setHint(T('ar.belowHorizon'), false);
     } else {
-      setHint('La línea naranja es el recorrido del Sol durante el eclipse. ⛔ No mires al Sol sin filtro.', false);
+      setHint(T('ar.normal'), false);
     }
   }
 
@@ -687,11 +695,11 @@
     const okCam = await startCamera();
 
     if (!okCam) {
-      $('arInfo').innerHTML = '⚠️ Sin acceso a la cámara.<br>Se muestra solo la superposición.';
+      $('arInfo').innerHTML = T('ar.noCamera');
       $('arVideo').style.display = 'none';
     }
     if (!okSensors) {
-      setHint('Sin permiso para los sensores de orientación. En iPhone, recarga y acepta el aviso de «Movimiento y orientación».', false);
+      setHint(T('ar.noSensors'), false);
     }
 
     cache.key = null;
@@ -764,7 +772,7 @@
     ar.calibrating = false;
     const cb = $('arCal'); if (cb) cb.classList.remove('on');
     lastHint = '';
-    setHint(`✅ Brújula corregida <b>${ar.headingOffset > 0 ? '+' : ''}${ar.headingOffset.toFixed(1)}°</b>. Se recuerda para la próxima vez.`, false);
+    setHint(T('ar.calibDone', { off: (ar.headingOffset > 0 ? '+' : '') + ar.headingOffset.toFixed(1) }), false);
     if (navigator.vibrate) navigator.vibrate(80);
   }
 
@@ -784,7 +792,7 @@
       ar.calibrating = !ar.calibrating;
       cb.classList.toggle('on', ar.calibrating);
       lastHint = '';
-      if (!ar.calibrating) setHint('Calibración cancelada.', false);
+      if (!ar.calibrating) setHint(T('ar.calibCancel'), false);
       if (navigator.vibrate) navigator.vibrate(60);
     };
 
@@ -793,7 +801,7 @@
       ar.headingOffset = 0;
       try { localStorage.removeItem('eclipse-heading-offset'); } catch (e) {}
       ar.calibrating = false; cb.classList.remove('on');
-      lastHint = ''; setHint('Corrección de brújula reiniciada.', false);
+      lastHint = ''; setHint(T('ar.calibReset'), false);
     };
 
     const cv = $('arCanvas');

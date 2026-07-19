@@ -5,6 +5,7 @@
   'use strict';
 
   const $ = id => document.getElementById(id);
+  const T = (k, p) => I18N.t(k, p);
   const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');
 
   // ---------------------------------------------------------------------
@@ -56,8 +57,8 @@
   };
   window.__eclipseState = state;
 
-  const fmtTime = d => d ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
-  const fmtHM   = d => d ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmtTime = d => d ? d.toLocaleTimeString(I18N.locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+  const fmtHM   = d => d ? d.toLocaleTimeString(I18N.locale, { hour: '2-digit', minute: '2-digit' }) : '—';
 
   function fmtDur(s) {
     s = Math.round(s);
@@ -66,10 +67,7 @@
     return m > 0 ? `${m}m ${pad(s % 60)}s` : `${s}s`;
   }
 
-  function cardinal(az) {
-    const names = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'];
-    return names[Math.round(az / 22.5) % 16];
-  }
+  const cardinal = az => I18N.cardinal(az);
 
   // =====================================================================
   // FONDO ESTELAR
@@ -103,7 +101,8 @@
   // =====================================================================
   function recompute() {
     state.lc = Eclipse.localCircumstances(state.lat, state.lon, state.height);
-    $('locChip').textContent = `${state.label} · ${Math.abs(state.lat).toFixed(3)}°${state.lat >= 0 ? 'N' : 'S'} ${Math.abs(state.lon).toFixed(3)}°${state.lon >= 0 ? 'E' : 'O'}`;
+    const DIRS = I18N.t('dir');            // 0=N 4=E 8=S 12=O/W, según idioma
+    $('locChip').textContent = `${state.label} · ${Math.abs(state.lat).toFixed(3)}°${state.lat >= 0 ? DIRS[0] : DIRS[8]} ${Math.abs(state.lon).toFixed(3)}°${state.lon >= 0 ? DIRS[4] : DIRS[12]}`;
     renderAlerts();
     renderPhases();
     renderStats();
@@ -116,6 +115,14 @@
 
   function now() { return new Date(Date.now() + state.offsetMs); }
 
+  /** Ocaso de hoy en la ubicación actual (informativo) */
+  function refreshSunset() {
+    try {
+      const rs = Astro.sunRiseSet(new Date(), state.lat, state.lon);
+      $('sunSet').textContent = rs.set ? fmtHM(rs.set) : '—';
+    } catch (e) { $('sunSet').textContent = '—'; }
+  }
+
   // =====================================================================
   // AVISOS
   // =====================================================================
@@ -124,7 +131,7 @@
     const lc = state.lc;
     if (!lc) {
       el.innerHTML = `<div class="alert danger"><span class="alert-ico">🌍</span>
-        <div>Desde <b>${state.label}</b> este eclipse <b>no es visible</b>. La sombra de la Luna no pasa por aquí.</div></div>`;
+        <div>${T('alert.notVisible', { place: state.label })}</div></div>`;
       return;
     }
 
@@ -133,26 +140,30 @@
     };
 
     if (lc.type === 'total') {
-      add('ok', '🌑', `<b>¡Estás dentro de la franja de totalidad!</b> Verás la corona solar durante <b>${fmtDur(lc.totalityDuration)}</b> a las <b>${fmtTime(lc.max.date)}</b>.`);
+      add('ok', '🌑', T('alert.total', { dur: fmtDur(lc.totalityDuration), time: fmtTime(lc.max.date) }));
     } else {
       const near = Eclipse.nearestCentralPoint(state.lat, state.lon);
       if (near) {
-        add('warn', '🚗', `Desde aquí el eclipse será <b>parcial</b> (${(lc.obscuration * 100).toFixed(1)} % del Sol cubierto). La línea central de totalidad pasa a <b>${Math.round(near.distanceKm)} km</b> hacia el <b>${cardinal(near.bearing)}</b>. Merece muchísimo la pena desplazarse: un 99 % parcial <i>no</i> se parece en nada a la totalidad.`);
+        add('warn', '🚗', T('alert.partial', {
+          pct: (lc.obscuration * 100).toFixed(1),
+          km: Math.round(near.distanceKm),
+          dir: cardinal(near.bearing)
+        }));
       }
     }
 
     // Sol bajo / puesta durante el eclipse
     const altMax = lc.max.altRefracted;
     if (!lc.visible.max) {
-      add('danger', '🌇', `El máximo del eclipse ocurre <b>con el Sol ya puesto</b> en tu ubicación. Necesitas desplazarte al oeste o al norte.`);
+      add('danger', '🌇', T('alert.belowHorizon'));
     } else if (altMax < 5) {
-      add('danger', '⛰️', `El Sol estará a solo <b>${altMax.toFixed(1)}°</b> de altura en el máximo — poco más que el ancho de tres dedos con el brazo extendido. Necesitas un horizonte oeste <b>completamente despejado</b> (costa, mirador o llanura).`);
+      add('danger', '⛰️', T('alert.veryLow', { alt: altMax.toFixed(1) }));
     } else if (altMax < 12) {
-      add('warn', '⛰️', `El Sol estará bajo, a <b>${altMax.toFixed(1)}°</b> de altura en el máximo. Busca un lugar con el horizonte oeste libre de montañas y edificios.`);
+      add('warn', '⛰️', T('alert.low', { alt: altMax.toFixed(1) }));
     }
 
     if (lc.visible.c1 && !lc.visible.c4) {
-      add('info', '🌆', `El Sol se pondrá <b>antes de que acabe</b> el eclipse: se ocultará todavía mordido por la Luna. Un espectáculo fotográfico brutal.`);
+      add('info', '🌆', T('alert.sunset'));
     }
   }
 
@@ -160,11 +171,11 @@
   // FASES
   // =====================================================================
   const PHASE_DEFS = [
-    { k: 'c1', ico: '🌒', n: 'C1 · Primer contacto', d: 'La Luna toca el borde del Sol. Empieza el eclipse parcial. <b>Filtro puesto.</b>' },
-    { k: 'c2', ico: '💍', n: 'C2 · Inicio de la totalidad', d: 'Anillo de diamante y perlas de Baily. <b>Ya puedes quitarte el filtro.</b>' },
-    { k: 'max', ico: '🌑', n: 'Máximo del eclipse', d: 'Momento álgido. Corona solar, planetas y estrellas visibles.' },
-    { k: 'c3', ico: '💎', n: 'C3 · Fin de la totalidad', d: 'Reaparece el Sol. <b>Filtro puesto YA</b>, antes del primer destello.' },
-    { k: 'c4', ico: '🌘', n: 'C4 · Último contacto', d: 'La Luna abandona el disco solar. Fin del eclipse.' }
+    { k: 'c1',  ico: '🌒', n: 'phase.c1',  d: 'phase.c1d' },
+    { k: 'c2',  ico: '💍', n: 'phase.c2',  d: 'phase.c2d' },
+    { k: 'max', ico: '🌑', n: 'phase.max', d: 'phase.maxd' },
+    { k: 'c3',  ico: '💎', n: 'phase.c3',  d: 'phase.c3d' },
+    { k: 'c4',  ico: '🌘', n: 'phase.c4',  d: 'phase.c4d' }
   ];
 
   function renderPhases() {
@@ -177,13 +188,14 @@
       const done = t > ev.date;
       let cls = done ? 'done' : '';
       const altCls = ev.altRefracted <= 0 ? 'below' : ev.altRefracted < 8 ? 'low' : '';
-      const altTxt = ev.altRefracted <= 0 ? 'bajo el horizonte' : `Alt ${ev.altRefracted.toFixed(1)}° · Az ${ev.az.toFixed(0)}° ${cardinal(ev.az)}`;
+      const altTxt = ev.altRefracted <= 0 ? T('sun.below')
+        : `Alt ${ev.altRefracted.toFixed(1)}° · Az ${ev.az.toFixed(0)}° ${cardinal(ev.az)}`;
       el.insertAdjacentHTML('beforeend', `
         <div class="phase ${cls}" data-k="${p.k}">
           <div class="phase-ico">${p.ico}</div>
           <div>
-            <div class="phase-name">${p.n}</div>
-            <div class="phase-desc">${p.d}</div>
+            <div class="phase-name">${T(p.n)}</div>
+            <div class="phase-desc">${T(p.d)}</div>
           </div>
           <div class="phase-time">
             <b>${fmtTime(ev.date)}</b>
@@ -193,7 +205,7 @@
     }
     if (!lc.c2) {
       el.insertAdjacentHTML('beforeend',
-        `<div class="muted" style="padding:10px 4px">Sin fase de totalidad en esta ubicación: el eclipse será parcial y <b>nunca</b> podrás quitarte el filtro.</div>`);
+        `<div class="muted" style="padding:10px 4px">${T('phases.noTotality')}</div>`);
     }
   }
 
@@ -202,19 +214,20 @@
   // =====================================================================
   function renderStats() {
     const el = $('stats'); el.innerHTML = '';
-    const lc = state.lc; if (!lc) { el.innerHTML = '<div class="muted">Sin datos.</div>'; return; }
-    const badge = lc.type === 'total' ? '<span class="badge total">Total</span>'
-                : lc.type === 'annular' ? '<span class="badge partial">Anular</span>'
-                : '<span class="badge partial">Parcial</span>';
+    const lc = state.lc;
+    if (!lc) { el.innerHTML = `<div class="muted">${T('stat.noData')}</div>`; return; }
+    const badge = lc.type === 'total' ? `<span class="badge total">${T('badge.total')}</span>`
+                : lc.type === 'annular' ? `<span class="badge partial">${T('badge.annular')}</span>`
+                : `<span class="badge partial">${T('badge.partial')}</span>`;
     const items = [
-      ['Tipo de eclipse', badge],
-      ['Duración de la totalidad', `<b>${fmtDur(lc.totalityDuration)}</b>`],
-      ['Magnitud máxima', lc.magnitude.toFixed(4)],
-      ['Sol cubierto (área)', (lc.obscuration * 100).toFixed(2) + ' <small>%</small>'],
-      ['Duración total del evento', fmtDur(lc.duration)],
-      ['Altura del Sol en el máximo', lc.max.altRefracted.toFixed(1) + ' <small>°</small>'],
-      ['Azimut en el máximo', lc.max.az.toFixed(1) + ' <small>° ' + cardinal(lc.max.az) + '</small>'],
-      ['Tamaño Luna / Sol', lc.moonOverSun.toFixed(4)]
+      [T('stat.type'), badge],
+      [T('stat.totality'), `<b>${fmtDur(lc.totalityDuration)}</b>`],
+      [T('stat.mag'), lc.magnitude.toFixed(4)],
+      [T('stat.obs'), (lc.obscuration * 100).toFixed(2) + ' <small>%</small>'],
+      [T('stat.duration'), fmtDur(lc.duration)],
+      [T('stat.altMax'), lc.max.altRefracted.toFixed(1) + ' <small>°</small>'],
+      [T('stat.azMax'), lc.max.az.toFixed(1) + ' <small>° ' + cardinal(lc.max.az) + '</small>'],
+      [T('stat.ratio'), lc.moonOverSun.toFixed(4)]
     ];
     for (const [l, v] of items) {
       el.insertAdjacentHTML('beforeend', `<div class="stat"><div class="stat-l">${l}</div><div class="stat-v">${v}</div></div>`);
@@ -239,7 +252,7 @@
 
     for (const [n, ev] of visibles) {
       const pos = Math.min(94, Math.max(6, pctOf(ev)));
-      const label = crowded && n === 'MÁX' ? 'TOTALIDAD' : n;
+      const label = crowded && n === 'MÁX' ? T('mark.totality') : n;
       el.insertAdjacentHTML('beforeend',
         `<div class="pmark" style="left:${pos}%" data-ts="${ev.date.getTime()}"><b>${label}</b>${fmtHM(ev.date)}</div>`);
     }
@@ -269,21 +282,21 @@
   // =====================================================================
   function updateCountdown(t) {
     const lc = state.lc;
-    if (!lc) { $('cdLabel').textContent = 'Eclipse no visible desde aquí'; return; }
+    if (!lc) { $('cdLabel').textContent = T('cd.notVisible'); return; }
 
     const targets = [
-      [lc.c1.date, 'Faltan para el INICIO del eclipse (C1)'],
-      lc.c2 ? [lc.c2.date, '⚡ Faltan para la TOTALIDAD (C2)'] : null,
-      [lc.max.date, 'Faltan para el MÁXIMO del eclipse'],
-      lc.c3 ? [lc.c3.date, '🔴 Queda de TOTALIDAD — ¡mira ahora!'] : null,
-      [lc.c4.date, 'Queda para el FIN del eclipse (C4)']
+      [lc.c1.date, T('cd.c1')],
+      lc.c2 ? [lc.c2.date, T('cd.c2')] : null,
+      [lc.max.date, T('cd.max')],
+      lc.c3 ? [lc.c3.date, T('cd.c3')] : null,
+      [lc.c4.date, T('cd.c4')]
     ].filter(Boolean);
 
     let target = null, label = '';
     for (const [d, l] of targets) { if (t < d) { target = d; label = l; break; } }
 
     if (!target) {
-      $('cdLabel').textContent = '✨ El eclipse ha terminado';
+      $('cdLabel').textContent = T('cd.done');
       ['cdD', 'cdH', 'cdM', 'cdS'].forEach(i => $(i).textContent = '0');
       $('countdown').classList.remove('urgent');
       return;
@@ -318,15 +331,15 @@
       }
     };
     const secTo = d => (d - t) / 1000;
-    if (lc.c1 && Math.abs(secTo(lc.c1.date)) < 30) fire('c1', '🌒 Empieza el eclipse', 'Primer contacto. Ponte el filtro solar.');
+    if (lc.c1 && Math.abs(secTo(lc.c1.date)) < 30) fire('c1', T('notif.c1'), T('notif.c1b'));
     if (lc.c2) {
-      if (secTo(lc.c2.date) > 0 && secTo(lc.c2.date) < 60) fire('c2pre', '⚡ Totalidad en 1 minuto', 'Prepárate. Anillo de diamante inminente.', [300, 150, 300, 150, 300]);
-      if (Math.abs(secTo(lc.c2.date)) < 20) fire('c2', '🌑 ¡TOTALIDAD!', '¡Quítate el filtro y mira la corona!', [500, 200, 500]);
+      if (secTo(lc.c2.date) > 0 && secTo(lc.c2.date) < 60) fire('c2pre', T('notif.c2pre'), T('notif.c2preb'), [300, 150, 300, 150, 300]);
+      if (Math.abs(secTo(lc.c2.date)) < 20) fire('c2', T('notif.c2'), T('notif.c2b'), [500, 200, 500]);
     }
     if (lc.c3) {
-      if (secTo(lc.c3.date) > 0 && secTo(lc.c3.date) < 15) fire('c3pre', '⚠️ Fin de la totalidad', '¡FILTRO PUESTO YA!', [500, 100, 500, 100, 500]);
+      if (secTo(lc.c3.date) > 0 && secTo(lc.c3.date) < 15) fire('c3pre', T('notif.c3'), T('notif.c3b'), [500, 100, 500, 100, 500]);
     }
-    if (lc.c4 && Math.abs(secTo(lc.c4.date)) < 30) fire('c4', '🌘 Fin del eclipse', 'Último contacto. Hasta el 2 de agosto de 2027.');
+    if (lc.c4 && Math.abs(secTo(lc.c4.date)) < 30) fire('c4', T('notif.c4'), T('notif.c4b'));
   }
 
   // =====================================================================
@@ -426,9 +439,9 @@
     const before = state.lc && t < state.lc.c1.date;
     $('roMag').textContent = st.outOfRange ? '—' : st.magnitude.toFixed(3);
     $('roObs').textContent = st.outOfRange ? '—' : (st.obscuration * 100).toFixed(1) + ' %';
-    $('roPhase').textContent = st.phase === 'total' ? 'TOTAL'
-      : st.phase === 'partial' ? 'Parcial'
-      : before ? 'Aún no' : 'Terminado';
+    $('roPhase').textContent = st.phase === 'total' ? T('ro.total')
+      : st.phase === 'partial' ? T('ro.partial')
+      : before ? T('ro.before') : T('ro.after');
   }
 
   // =====================================================================
@@ -451,9 +464,10 @@
     // Marcas cardinales
     g.font = `700 ${Math.round(W * .075)}px -apple-system, sans-serif`;
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    [['N', 0], ['E', 90], ['S', 180], ['O', 270]].forEach(([n, a]) => {
+    const DIRS = I18N.t('dir');
+    [[DIRS[0], 0], [DIRS[4], 90], [DIRS[8], 180], [DIRS[12], 270]].forEach(([n, a], i) => {
       const rr = R * 1.14, rad = (a - 90) * Math.PI / 180;
-      g.fillStyle = n === 'N' ? '#ff5f6d' : 'rgba(255,255,255,.55)';
+      g.fillStyle = i === 0 ? '#ff5f6d' : 'rgba(255,255,255,.55)';
       g.fillText(n, cx + Math.cos(rad) * rr, cy + Math.sin(rad) * rr);
     });
     for (let a = 0; a < 360; a += 15) {
@@ -503,7 +517,7 @@
     // Panel de datos
     $('sunAz').textContent = sun.az.toFixed(1) + '°';
     $('sunAlt').textContent = sun.altRefracted.toFixed(1) + '°';
-    $('sunDir').textContent = cardinal(sun.az) + (sun.alt <= 0 ? ' (bajo el horizonte)' : '');
+    $('sunDir').textContent = cardinal(sun.az) + (sun.alt <= 0 ? ' ' + T('sun.below') : '');
   }
 
   // =====================================================================
@@ -520,10 +534,13 @@
   function updateMap() {
     const near = Eclipse.nearestCentralPoint(state.lat, state.lon);
     $('mapNote').innerHTML = near
-      ? `La línea central más próxima está a <b>${Math.round(near.distanceKm)} km</b> hacia el <b>${cardinal(near.bearing)}</b> (${near.point.lat.toFixed(2)}°, ${near.point.lon.toFixed(2)}°). Toca el mapa para calcular cualquier otro punto.`
-      : 'Toca el mapa para calcular las circunstancias en cualquier punto.';
+      ? T('map.note', {
+          km: Math.round(near.distanceKm), dir: cardinal(near.bearing),
+          lat: near.point.lat.toFixed(2), lon: near.point.lon.toFixed(2)
+        })
+      : T('map.noteSimple');
 
-    if (typeof L === 'undefined') { $('map').innerHTML = '<div style="padding:20px" class="muted">Mapa no disponible sin conexión.</div>'; return; }
+    if (typeof L === 'undefined') { $('map').innerHTML = `<div style="padding:20px" class="muted">${T('map.offline')}</div>`; return; }
     if (!state.map) {
       state.map = L.map('map', { zoomControl: true, attributionControl: false })
         .setView([state.lat, state.lon], 5);
@@ -545,7 +562,7 @@
           })
         }).addTo(state.map);
       });
-      state.map.on('click', e => setLocation(e.latlng.lat, e.latlng.lng, 0, 'Punto del mapa'));
+      state.map.on('click', e => setLocation(e.latlng.lat, e.latlng.lng, 0, T('app.mapPoint'), 'app.mapPoint'));
     }
 
     if (state.mapLayers.me) state.map.removeLayer(state.mapLayers.me);
@@ -572,10 +589,17 @@
     }
   }
 
-  function setLocation(lat, lon, h, label) {
-    state.lat = lat; state.lon = lon; state.height = h || 0; state.label = label || 'Mi ubicación';
+  /** @param {string} [labelKey] clave i18n, si la etiqueta es texto de la app */
+  function setLocation(lat, lon, h, label, labelKey) {
+    state.lat = lat; state.lon = lon; state.height = h || 0;
+    state.label = label || T('app.myLocation');
+    state.labelKey = labelKey || null;
     state.notified = {};
-    try { localStorage.setItem('eclipse-loc', JSON.stringify({ lat, lon, h: state.height, label: state.label })); } catch (e) {}
+    try {
+      localStorage.setItem('eclipse-loc', JSON.stringify({
+        lat, lon, h: state.height, label: state.label, labelKey: state.labelKey
+      }));
+    } catch (e) {}
     recompute();
   }
   window.__setLocation = setLocation;
@@ -616,28 +640,56 @@
   });
   $('scrubReset').onclick = () => {
     state.offsetMs = 0; state.live = true;
-    $('scrub').value = 0; $('scrubTime').textContent = 'EN VIVO';
+    $('scrub').value = 0; $('scrubTime').textContent = T('scrub.live');
     tick();
   };
 
   // =====================================================================
   // GEOLOCALIZACIÓN
   // =====================================================================
-  $('btnGeo').onclick = () => {
-    if (!navigator.geolocation) { alert('Tu navegador no soporta geolocalización.'); return; }
-    $('geoLabel').innerHTML = '<span class="spinner"></span> Localizando…';
+  /**
+   * Pide la ubicación al navegador.
+   * @param {boolean} silent en el arranque automático no molestamos con
+   *        alertas si el usuario deniega el permiso o no hay señal.
+   */
+  function requestGeo(silent) {
+    if (!navigator.geolocation) {
+      if (!silent) alert(T('app.geoUnsupported'));
+      return;
+    }
+    $('geoLabel').innerHTML = `<span class="spinner"></span> ${T('app.geoLocating')}`;
     navigator.geolocation.getCurrentPosition(
       p => {
-        $('geoLabel').textContent = 'Ubicación GPS activa';
-        setLocation(p.coords.latitude, p.coords.longitude, p.coords.altitude || 0, 'Mi ubicación');
+        state.usingGeo = true;
+        $('geoLabel').textContent = T('app.geoActive');
+        setLocation(p.coords.latitude, p.coords.longitude, p.coords.altitude || 0,
+                    T('app.myLocation'), 'app.myLocation');
       },
       err => {
-        $('geoLabel').textContent = 'Usar mi ubicación GPS';
-        alert('No se pudo obtener la ubicación: ' + err.message + '\n\nRecuerda que el GPS requiere HTTPS.');
+        $('geoLabel').textContent = T('app.geo');
+        if (!silent) alert(T('app.geoError') + err.message + '\n\n' + T('app.geoHttps'));
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
-  };
+  }
+
+  $('btnGeo').onclick = () => requestGeo(false);
+
+  /**
+   * Arranque: intentamos el GPS solo, sin esperar a que el usuario lo pida.
+   * Si el permiso ya está denegado no volvemos a preguntar (evita el aviso
+   * del navegador en cada visita); si aún no se ha decidido, sí preguntamos.
+   */
+  function autoGeo() {
+    if (!navigator.geolocation) return;
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then(st => { if (st.state !== 'denied') requestGeo(true); })
+        .catch(() => requestGeo(true));
+    } else {
+      requestGeo(true);
+    }
+  }
 
   // =====================================================================
   // HERRAMIENTAS
@@ -647,11 +699,13 @@
     const z = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const ev = (uid, title, d, desc) =>
       `BEGIN:VEVENT\r\nUID:${uid}@eclipse2026\r\nDTSTAMP:${z(new Date())}\r\nDTSTART:${z(d)}\r\nDTEND:${z(new Date(+d + 300000))}\r\nSUMMARY:${title}\r\nDESCRIPTION:${desc}\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:${title}\r\nEND:VALARM\r\nEND:VEVENT\r\n`;
-    let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Eclipse AR 2026//ES\r\nCALSCALE:GREGORIAN\r\n';
-    ics += ev('c1', '🌒 Empieza el eclipse solar (C1)', lc.c1.date, `Ponte las gafas de eclipse ISO 12312-2. ${state.label}`);
-    if (lc.c2) ics += ev('c2', '🌑 TOTALIDAD del eclipse', lc.c2.date, `Duración: ${fmtDur(lc.totalityDuration)}. Quítate el filtro SOLO ahora.`);
-    ics += ev('max', '☀️ Máximo del eclipse', lc.max.date, `Magnitud ${lc.magnitude.toFixed(3)} · ${(lc.obscuration * 100).toFixed(1)} % cubierto`);
-    ics += ev('c4', '🌘 Fin del eclipse (C4)', lc.c4.date, 'Último contacto.');
+    let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Eclipse AR 2026//EU\r\nCALSCALE:GREGORIAN\r\n';
+    ics += ev('c1', T('ics.c1'), lc.c1.date, T('ics.c1d', { place: state.label }));
+    if (lc.c2) ics += ev('c2', T('ics.c2'), lc.c2.date, T('ics.c2d', { dur: fmtDur(lc.totalityDuration) }));
+    ics += ev('max', T('ics.max'), lc.max.date, T('ics.maxd', {
+      mag: lc.magnitude.toFixed(3), pct: (lc.obscuration * 100).toFixed(1)
+    }));
+    ics += ev('c4', T('ics.c4'), lc.c4.date, T('ics.c4d'));
     ics += 'END:VCALENDAR\r\n';
     const blob = new Blob([ics], { type: 'text/calendar' });
     const a = document.createElement('a');
@@ -661,26 +715,26 @@
   };
 
   $('btnNotify').onclick = async () => {
-    if (!('Notification' in window)) { alert('Tu navegador no soporta notificaciones.'); return; }
+    if (!('Notification' in window)) { alert(T('tools.notifyUnsupported')); return; }
     const p = await Notification.requestPermission();
     if (p === 'granted') {
-      new Notification('🔔 Avisos activados', { body: 'Te avisaré en cada fase del eclipse. Mantén la app abierta ese día.', icon: 'icons/icon-192.png' });
+      new Notification(T('tools.notifyOn'), { body: T('tools.notifyOnBody'), icon: 'icons/icon-192.png' });
     }
   };
 
   $('btnShare').onclick = async () => {
     const lc = state.lc;
     const txt = lc && lc.type === 'total'
-      ? `Eclipse total el 12/08/2026 desde ${state.label}: totalidad a las ${fmtTime(lc.c2.date)} durante ${fmtDur(lc.totalityDuration)}.`
-      : `Eclipse solar del 12/08/2026 desde ${state.label}.`;
+      ? T('share.total', { place: state.label, time: fmtTime(lc.c2.date), dur: fmtDur(lc.totalityDuration) })
+      : T('share.other', { place: state.label });
     if (navigator.share) { try { await navigator.share({ title: 'Eclipse AR 2026', text: txt, url: location.href }); } catch (e) {} }
-    else { try { await navigator.clipboard.writeText(txt + ' ' + location.href); alert('Enlace copiado.'); } catch (e) {} }
+    else { try { await navigator.clipboard.writeText(txt + ' ' + location.href); alert(T('tools.copied')); } catch (e) {} }
   };
 
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); state.deferredInstall = e; });
   $('btnInstall').onclick = async () => {
     if (state.deferredInstall) { state.deferredInstall.prompt(); state.deferredInstall = null; }
-    else alert('En iPhone: pulsa el botón «Compartir» de Safari y elige «Añadir a pantalla de inicio».\nEn Android: menú ⋮ → «Instalar aplicación».');
+    else alert(T('tools.installHelp'));
   };
 
   $('btnTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
@@ -690,29 +744,36 @@
   // =====================================================================
   // ARRANQUE
   // =====================================================================
+  // --- Selector de idioma ---
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.addEventListener('click', () => I18N.setLang(b.dataset.lang));
+  });
+
+  I18N.onChange(() => {
+    // Las etiquetas guardadas que puso la propia app se retraducen; los
+    // nombres de ciudad y los puntos del mapa se quedan como están.
+    if (state.labelKey) state.label = T(state.labelKey);
+    recompute();
+    refreshSunset();
+  });
+
+  I18N.applyStatic();
+
   try {
     const saved = JSON.parse(localStorage.getItem('eclipse-loc') || 'null');
-    if (saved) { state.lat = saved.lat; state.lon = saved.lon; state.height = saved.h; state.label = saved.label; }
+    if (saved) {
+      state.lat = saved.lat; state.lon = saved.lon;
+      state.height = saved.h; state.label = saved.label;
+      state.labelKey = saved.labelKey || null;
+    }
   } catch (e) {}
 
   recompute();
-
-  // Ocaso de hoy (informativo)
-  try {
-    const rs = Astro.sunRiseSet(new Date(), state.lat, state.lon);
-    $('sunSet').textContent = rs.set ? fmtHM(rs.set) : '—';
-  } catch (e) {}
-  $('sunNote').innerHTML = 'La brújula muestra el <b>Norte arriba</b>; el borde es el horizonte y el centro, el cenit. La línea naranja es el recorrido que hará el Sol durante el eclipse, y el punto blanco marca el instante del máximo.';
+  refreshSunset();
+  autoGeo();
 
   setInterval(tick, 1000);
-  setInterval(() => {
-    if (state.live) {
-      try {
-        const rs = Astro.sunRiseSet(new Date(), state.lat, state.lon);
-        $('sunSet').textContent = rs.set ? fmtHM(rs.set) : '—';
-      } catch (e) {}
-    }
-  }, 600000);
+  setInterval(() => { if (state.live) refreshSunset(); }, 600000);
 
   // Service worker
   if ('serviceWorker' in navigator) {
