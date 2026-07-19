@@ -1,15 +1,16 @@
 /* Service worker — funcionamiento sin conexión.
    Importante: el día del eclipse puede que no haya cobertura en el campo. */
-const CACHE = 'eclipse-ar-2026-v4';
+const CACHE = 'eclipse-ar-2026-v5';
 const ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=3',
-  './js/i18n.js?v=3',
-  './js/astro.js?v=3',
-  './js/eclipse.js?v=3',
-  './js/ar.js?v=3',
-  './js/app.js?v=3',
+  './css/style.css?v=4',
+  './js/i18n.js?v=4',
+  './js/voice.js?v=4',
+  './js/astro.js?v=4',
+  './js/eclipse.js?v=4',
+  './js/ar.js?v=4',
+  './js/app.js?v=4',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'

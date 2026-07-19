@@ -24,7 +24,8 @@ El primer eclipse total visible desde la España peninsular en más de un siglo.
 | 🔔 **Alarmas** | Vibración y notificación en cada contacto, con avisos de «quítate el filtro» y «filtro puesto YA». |
 | 📅 **Exportar a calendario** | Genera un `.ics` con los cuatro contactos y recordatorios a 15 minutos. |
 | 📴 **Funciona sin conexión** | Service worker: el día del eclipse puede que no tengas cobertura en el campo. |
-| 🌐 **Trilingüe** | Català (por defecto), castellano e inglés. Se cambia con las banderas de la cabecera y se recuerda la elección. |
+| 🗣️ **La app te habla** | Narra sola cada fase y te va diciendo qué mirar en cada momento. Clave durante la totalidad: son ~100 segundos irrepetibles en los que **no debes mirar el móvil**. Elige la mejor voz instalada en tu dispositivo (Siri, neuronales de Google, Premium/Enhanced) en vez de la robótica por defecto. Funciona sin conexión y sin servidor. |
+| 🌐 **Cinco idiomas** | Català (por defecto), castellano, inglés, francés y alemán. Se cambia con las banderas de la cabecera y se recuerda la elección. |
 
 ---
 
