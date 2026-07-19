@@ -829,7 +829,7 @@
     $('scrubTime').textContent = fmtTime(new Date(target));
     tick();
   });
-  $('scrubReset').onclick = () => {
+  const _el1 = $('scrubReset'); if (_el1) _el1.onclick = () => {
     state.offsetMs = 0; state.live = true;
     $('scrub').value = 0; $('scrubTime').textContent = T('scrub.live');
     tick();
@@ -865,7 +865,7 @@
     );
   }
 
-  $('btnGeo').onclick = () => requestGeo(false);
+  const _el2 = $('btnGeo'); if (_el2) _el2.onclick = () => requestGeo(false);
 
   /**
    * Arranque: intentamos el GPS solo, sin esperar a que el usuario lo pida.
@@ -886,7 +886,7 @@
   // =====================================================================
   // HERRAMIENTAS
   // =====================================================================
-  $('btnICS').onclick = () => {
+  const _el3 = $('btnICS'); if (_el3) _el3.onclick = () => {
     const lc = state.lc; if (!lc) return;
     const z = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const ev = (uid, title, d, desc) =>
@@ -906,7 +906,7 @@
     a.click();
   };
 
-  $('btnNotify').onclick = async () => {
+  const _el4 = $('btnNotify'); if (_el4) _el4.onclick = async () => {
     if (!('Notification' in window)) { alert(T('tools.notifyUnsupported')); return; }
     const p = await Notification.requestPermission();
     if (p === 'granted') {
@@ -914,7 +914,7 @@
     }
   };
 
-  $('btnShare').onclick = async () => {
+  const _el5 = $('btnShare'); if (_el5) _el5.onclick = async () => {
     const lc = state.lc;
     const txt = lc && lc.type === 'total'
       ? T('share.total', { place: state.label, time: fmtTime(lc.c2.date), dur: fmtDur(lc.totalityDuration) })
@@ -924,7 +924,7 @@
   };
 
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); state.deferredInstall = e; });
-  $('btnInstall').onclick = async () => {
+  const _el6 = $('btnInstall'); if (_el6) _el6.onclick = async () => {
     if (state.deferredInstall) { state.deferredInstall.prompt(); state.deferredInstall = null; }
     else alert(T('tools.installHelp'));
   };
@@ -936,13 +936,18 @@
     const b = $('btnVoice');
     if (!b) return;
     if (!Voice.supported) {
-      b.style.display = 'none'; $('btnBrief').style.display = 'none';
-      $('countdown').classList.remove('tappable');
+      b.style.display = 'none';
+      const br = $('btnBrief'); if (br) br.style.display = 'none';
+      const cd = $('countdown'); if (cd) cd.classList.remove('tappable');
       const h = document.querySelector('.cd-hint'); if (h) h.style.display = 'none';
       return;
     }
     b.classList.toggle('on', Voice.enabled);
-    $('voiceTitle').textContent = T(Voice.enabled ? 'tl.voiceOn' : 'tl.voice');
+    // Puede faltar si el navegador sirve un index.html cacheado más antiguo:
+    // no debe tumbar el resto de la app.
+    const title = $('voiceTitle');
+    if (title) title.textContent = T(Voice.enabled ? 'tl.voiceOn' : 'tl.voice');
+    else b.textContent = T(Voice.enabled ? 'v.btnOn' : 'v.btnOff');
 
     const note = $('voiceNote');
     if (note) {
@@ -958,7 +963,7 @@
     }
   }
 
-  $('btnVoice').onclick = () => {
+  const _el7 = $('btnVoice'); if (_el7) _el7.onclick = () => {
     Voice.setEnabled(!Voice.enabled);
     Voice.pickVoice(I18N.lang);
     updateVoiceUI();
@@ -969,7 +974,7 @@
     }
   };
 
-  $('btnBrief').onclick = () => { Voice.unlock(); speakBriefing(); };
+  const _el8 = $('btnBrief'); if (_el8) _el8.onclick = () => { Voice.unlock(); speakBriefing(); };
 
   // Tocar el reloj: dice en voz alta cuánto falta. Al ser un gesto explícito
   // del usuario, ningún navegador lo bloquea.
@@ -982,10 +987,13 @@
     c.classList.add('speaking');
     if (navigator.vibrate) navigator.vibrate(18);
   }
-  $('countdown').addEventListener('click', sayCountdown);
-  $('countdown').addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sayCountdown(); }
-  });
+  const cdEl = $('countdown');
+  if (cdEl) {
+    cdEl.addEventListener('click', sayCountdown);
+    cdEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sayCountdown(); }
+    });
+  }
 
   /** Marca como ya dichos los hitos que quedaron atrás, para no soltarlos de golpe */
   function markPastAsSpoken() {
@@ -995,9 +1003,9 @@
     for (const m of state.vSchedule) if (t - m.date > 25000) state.spoken[m.id] = true;
   }
 
-  $('btnTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
-  $('btnAR').onclick = () => AR.open(state);
-  $('arClose').onclick = () => AR.close();
+  const _el9 = $('btnTop'); if (_el9) _el9.onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
+  const _el10 = $('btnAR'); if (_el10) _el10.onclick = () => AR.open(state);
+  const _el11 = $('arClose'); if (_el11) _el11.onclick = () => AR.close();
 
   // =====================================================================
   // ARRANQUE
