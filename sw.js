@@ -1,6 +1,6 @@
 /* Service worker — funcionamiento sin conexión.
    Importante: el día del eclipse puede que no haya cobertura en el campo. */
-const CACHE = 'eclipse-ar-2026-v1';
+const CACHE = 'eclipse-ar-2026-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -46,14 +46,16 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Recursos propios: caché primero
+  // Recursos propios: RED PRIMERO, caché como respaldo.
+  // Así la app siempre sirve la última versión cuando hay cobertura,
+  // y sigue funcionando entera cuando no la hay (que es el caso el día D).
   e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(r => {
+    fetch(req).then(r => {
       if (r.ok && new URL(req.url).origin === location.origin) {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
       }
       return r;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
   );
 });
