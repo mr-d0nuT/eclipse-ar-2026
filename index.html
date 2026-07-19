@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Eclipse AR 2026 · 12 de agosto</title>
+<meta name="description" content="Cuenta atrás, circunstancias locales y realidad aumentada para el eclipse solar total del 12 de agosto de 2026. Calculado en vivo desde los elementos besselianos de la NASA.">
+<meta name="theme-color" content="#05060d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Eclipse AR">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="starfield"></div>
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+
+  <!-- ══════════════ CABECERA ══════════════ -->
+  <header class="hero">
+    <div class="kicker">Eclipse Solar Total</div>
+    <h1>12 de agosto<br>de 2026</h1>
+    <p class="subtitle">El primer eclipse total visible desde la España peninsular en más de un siglo</p>
+    <div class="locbar">
+      <button class="chip accent" id="btnGeo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="geoLabel">Usar mi ubicación GPS</span>
+      </button>
+      <span class="chip" id="locChip">Oviedo · 43.362°N 5.849°O</span>
+    </div>
+  </header>
+
+  <!-- ══════════════ AVISOS ══════════════ -->
+  <div id="alerts"></div>
+
+  <!-- ══════════════ CUENTA ATRÁS ══════════════ -->
+  <section class="card">
+    <div class="countdown-label" id="cdLabel">Faltan para el inicio del eclipse</div>
+    <div class="countdown" id="countdown">
+      <div class="cd-unit"><div class="cd-num" id="cdD">—</div><div class="cd-lab">Días</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdH">—</div><div class="cd-lab">Horas</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdM">—</div><div class="cd-lab">Min</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdS">—</div><div class="cd-lab">Seg</div></div>
+    </div>
+
+    <div class="progress-shell">
+      <div class="progress-track">
+        <div class="progress-fill" id="progFill"></div>
+        <div class="progress-totality hidden" id="progTot"></div>
+      </div>
+      <div class="progress-marks" id="progMarks"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ FASES ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Fases del eclipse en tu posición</h2>
+    <div class="phases" id="phases"></div>
+    <div class="muted" style="margin-top:12px">
+      Horas en tu zona horaria local. «Alt» es la altura del Sol sobre el horizonte en ese instante.
+    </div>
+  </section>
+
+  <!-- ══════════════ SIMULACIÓN EN VIVO ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Simulación en tiempo real</h2>
+    <div class="sim-wrap">
+      <canvas id="simCanvas" width="640" height="640"></canvas>
+      <div class="sim-readout">
+        <div class="ro"><div class="ro-v" id="roMag">0.000</div><div class="ro-l">Magnitud</div></div>
+        <div class="ro"><div class="ro-v" id="roObs">0 %</div><div class="ro-l">Sol cubierto</div></div>
+        <div class="ro"><div class="ro-v" id="roPhase">—</div><div class="ro-l">Fase</div></div>
+      </div>
+      <div class="scrub">
+        <div class="scrub-row">
+          <span>Explorar el eclipse</span>
+          <b id="scrubTime">EN VIVO</b>
+        </div>
+        <input type="range" id="scrub" min="-100" max="100" value="0" step="0.1">
+        <div class="scrub-row" style="margin:6px 0 0">
+          <span class="muted">Arrastra para adelantar / retroceder</span>
+          <button class="city-btn" id="scrubReset">Volver a directo</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ POSICIÓN DEL SOL ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Dónde está el Sol ahora mismo</h2>
+    <div class="sunpos">
+      <canvas id="compass" width="320" height="320"></canvas>
+      <div class="sunpos-data">
+        <div class="spd"><span class="spd-l">Azimut (desde el Norte)</span><span class="spd-v" id="sunAz">—</span></div>
+        <div class="spd"><span class="spd-l">Altura sobre el horizonte</span><span class="spd-v" id="sunAlt">—</span></div>
+        <div class="spd"><span class="spd-l">Orientación</span><span class="spd-v" id="sunDir">—</span></div>
+        <div class="spd"><span class="spd-l">Ocaso hoy</span><span class="spd-v" id="sunSet">—</span></div>
+      </div>
+    </div>
+    <div class="muted" style="margin-top:12px" id="sunNote"></div>
+  </section>
+
+  <!-- ══════════════ DATOS LOCALES ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Circunstancias locales</h2>
+    <div class="grid2" id="stats"></div>
+  </section>
+
+  <!-- ══════════════ MAPA ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Franja de totalidad</h2>
+    <div id="map"></div>
+    <div class="map-legend">
+      <span><i style="background:#ffab3d"></i>Línea central</span>
+      <span><i style="background:rgba(255,171,61,.5)"></i>Banda de totalidad</span>
+      <span><i style="background:#4fd6ff"></i>Tu posición</span>
+    </div>
+    <div class="muted" id="mapNote" style="margin-top:10px"></div>
+  </section>
+
+  <!-- ══════════════ CIUDADES ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Ciudades de referencia</h2>
+    <div class="cities" id="cities"></div>
+    <div class="muted" style="margin-top:12px">En <b>naranja</b>, las que están dentro de la franja de totalidad.</div>
+  </section>
+
+  <!-- ══════════════ SEGURIDAD ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Seguridad y consejos</h2>
+    <div class="alert danger">
+      <span class="alert-ico">⛔</span>
+      <div><b>Nunca mires al Sol sin filtro homologado.</b> Necesitas gafas de eclipse certificadas <b>ISO 12312-2</b>. Las gafas de sol, radiografías, CDs o cristales ahumados <b>no sirven</b> y pueden causar ceguera permanente.</div>
+    </div>
+    <div class="alert ok">
+      <span class="alert-ico">👁️</span>
+      <div><b>Solo durante la totalidad</b> (entre C2 y C3) puedes y debes mirar a simple vista: es el único momento en que se ve la corona. Vuelve a ponerte el filtro <b>en cuanto asome el primer destello</b>.</div>
+    </div>
+    <div class="alert info">
+      <span class="alert-ico">📷</span>
+      <div>Cámaras, prismáticos y telescopios necesitan <b>filtro solar delante del objetivo</b>. Un filtro de ocular puede reventar por el calor.</div>
+    </div>
+    <div class="alert warn">
+      <span class="alert-ico">🏔️</span>
+      <div>En España el eclipse ocurre con el Sol <b>muy bajo</b> sobre el horizonte oeste. Busca un mirador despejado: una colina, la costa o un llano sin montañas al oeste. <b>Comprueba el horizonte el día antes a la misma hora.</b></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ ACCIONES ══════════════ -->
+  <section class="card">
+    <h2><span class="dot"></span>Herramientas</h2>
+    <div class="cities">
+      <button class="city-btn" id="btnICS">📅 Añadir al calendario</button>
+      <button class="city-btn" id="btnNotify">🔔 Avisos en el móvil</button>
+      <button class="city-btn" id="btnShare">🔗 Compartir</button>
+      <button class="city-btn" id="btnInstall">⬇️ Instalar la app</button>
+    </div>
+  </section>
+
+  <footer>
+    <p class="muted">
+      Cálculos derivados de los <b>elementos besselianos de la NASA/GSFC</b> (F. Espenak),
+      efemérides VSOP87/ELP2000-85, ΔT = 71.4 s. Todo se calcula en tu dispositivo, sin servidor.<br>
+      Verificado contra los datos del <b>IGN</b> (Oviedo: magnitud 1.015, totalidad 1m 48s).<br><br>
+      Hecho con cariño para los que llevan décadas esperando este día. ☀️🌑
+    </p>
+  </footer>
+</div>
+
+<!-- ══════════════ BOTONERA FLOTANTE ══════════════ -->
+<div class="dock">
+  <button class="btn btn-ar" id="btnAR">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M3 8V5a2 2 0 012-2h3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M21 16v3a2 2 0 01-2 2h-3"/>
+      <circle cx="12" cy="12" r="3.2"/>
+    </svg>
+    Modo Realidad Aumentada
+  </button>
+  <button class="btn btn-ghost" id="btnTop" title="Arriba">↑</button>
+</div>
+
+<!-- ══════════════ VISTA AR ══════════════ -->
+<div id="arView">
+  <video id="arVideo" playsinline muted autoplay></video>
+  <canvas id="arCanvas"></canvas>
+  <div class="ar-ui">
+    <div class="ar-top">
+      <div class="ar-pill" id="arInfo">Iniciando cámara…</div>
+      <button class="ar-close" id="arClose">✕</button>
+    </div>
+    <div class="ar-bottom">
+      <div class="ar-hint" id="arHint">Apunta el móvil hacia donde marca la flecha</div>
+      <div class="ar-controls">
+        <button class="ar-btn on" id="arTrack">Trayectoria</button>
+        <button class="ar-btn on" id="arDisk">Disco solar</button>
+        <button class="ar-btn" id="arCal">Calibrar brújula</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/eclipse.js"></script>
+<script src="js/ar.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
