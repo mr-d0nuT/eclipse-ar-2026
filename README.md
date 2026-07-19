@@ -24,6 +24,7 @@ El primer eclipse total visible desde la España peninsular en más de un siglo.
 | 🔔 **Alarmas** | Vibración y notificación en cada contacto, con avisos de «quítate el filtro» y «filtro puesto YA». |
 | 📅 **Exportar a calendario** | Genera un `.ics` con los cuatro contactos y recordatorios a 15 minutos. |
 | 📴 **Funciona sin conexión** | Service worker: el día del eclipse puede que no tengas cobertura en el campo. |
+| 🌐 **Trilingüe** | Català (por defecto), castellano e inglés. Se cambia con las banderas de la cabecera y se recuerda la elección. |
 
 ---
 
@@ -98,6 +99,7 @@ python3 -m http.server 8000
 ├── index.html                 Interfaz
 ├── css/style.css              Estilos
 ├── js/
+│   ├── i18n.js                Traducciones ca / es / en
 │   ├── astro.js               Posición solar, tiempo sidéreo, refracción
 │   ├── eclipse.js             Motor besseliano: contactos, magnitud, franja
 │   ├── ar.js                  Realidad aumentada (cámara + IMU + brújula)

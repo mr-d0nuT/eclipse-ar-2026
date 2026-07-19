@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="ca">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<title>Eclipse AR 2026 · 12 de agosto</title>
-<meta name="description" content="Cuenta atrás, circunstancias locales y realidad aumentada para el eclipse solar total del 12 de agosto de 2026. Calculado en vivo desde los elementos besselianos de la NASA.">
+<title>Eclipsi AR 2026 · 12 d'agost</title>
+<meta name="description" content="Compte enrere, circumstàncies locals i realitat augmentada per a l'eclipsi solar total del 12 d'agost de 2026. Calculat en viu des dels elements besselians de la NASA.">
 <meta name="theme-color" content="#05060d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -22,31 +22,66 @@
 
 <div class="wrap">
 
-  <!-- ══════════════ CABECERA ══════════════ -->
+  <!-- ══════════════ SELECTOR D'IDIOMA ══════════════ -->
+  <div class="langbar" role="group" aria-label="Idioma">
+    <button class="lang-btn" data-lang="ca" title="Català" aria-label="Català">
+      <svg viewBox="0 0 27 18" aria-hidden="true">
+        <rect width="27" height="18" fill="#FCDD09"/>
+        <g fill="#DA121A">
+          <rect y="2" width="27" height="2"/><rect y="6" width="27" height="2"/>
+          <rect y="10" width="27" height="2"/><rect y="14" width="27" height="2"/>
+        </g>
+      </svg>
+    </button>
+    <button class="lang-btn" data-lang="es" title="Castellano" aria-label="Castellano">
+      <svg viewBox="0 0 30 20" aria-hidden="true">
+        <rect width="30" height="20" fill="#AA151B"/>
+        <rect y="5" width="30" height="10" fill="#F1BF00"/>
+      </svg>
+    </button>
+    <button class="lang-btn" data-lang="en" title="English" aria-label="English">
+      <svg viewBox="0 0 60 30" aria-hidden="true">
+        <clipPath id="ukclip"><rect width="60" height="30"/></clipPath>
+        <g clip-path="url(#ukclip)">
+          <rect width="60" height="30" fill="#012169"/>
+          <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+          <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="3.5"/>
+          <path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/>
+          <path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/>
+        </g>
+      </svg>
+    </button>
+    <button class="lang-btn" data-lang="fr" title="Français" aria-label="Français">
+      <svg viewBox="0 0 30 20" aria-hidden="true">
+        <rect width="10" height="20" fill="#002395"/>
+        <rect x="10" width="10" height="20" fill="#fff"/>
+        <rect x="20" width="10" height="20" fill="#ED2939"/>
+      </svg>
+    </button>
+    <button class="lang-btn" data-lang="de" title="Deutsch" aria-label="Deutsch">
+      <svg viewBox="0 0 30 18" aria-hidden="true">
+        <rect width="30" height="6" fill="#000"/>
+        <rect y="6" width="30" height="6" fill="#DD0000"/>
+        <rect y="12" width="30" height="6" fill="#FFCE00"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ══════════════ CAPÇALERA ══════════════ -->
   <header class="hero">
-    <div class="kicker">Eclipse Solar Total</div>
-    <h1>12 de agosto<br>de 2026</h1>
-    <p class="subtitle">El primer eclipse total visible desde la España peninsular en más de un siglo</p>
-    <div class="locbar">
-      <button class="chip accent" id="btnGeo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        <span id="geoLabel">Usar mi ubicación GPS</span>
-      </button>
-      <span class="chip" id="locChip">Oviedo · 43.362°N 5.849°O</span>
-    </div>
+    <div class="kicker" data-i18n="app.kicker"></div>
+    <h1 data-i18n="app.title"></h1>
+    <p class="subtitle" data-i18n="app.subtitle"></p>
   </header>
 
-  <!-- ══════════════ AVISOS ══════════════ -->
-  <div id="alerts"></div>
-
-  <!-- ══════════════ CUENTA ATRÁS ══════════════ -->
+  <!-- ══════════════ COMPTE ENRERE ══════════════ -->
   <section class="card">
-    <div class="countdown-label" id="cdLabel">Faltan para el inicio del eclipse</div>
+    <div class="countdown-label" id="cdLabel"></div>
     <div class="countdown" id="countdown">
-      <div class="cd-unit"><div class="cd-num" id="cdD">—</div><div class="cd-lab">Días</div></div>
-      <div class="cd-unit"><div class="cd-num" id="cdH">—</div><div class="cd-lab">Horas</div></div>
-      <div class="cd-unit"><div class="cd-num" id="cdM">—</div><div class="cd-lab">Min</div></div>
-      <div class="cd-unit"><div class="cd-num" id="cdS">—</div><div class="cd-lab">Seg</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdD">—</div><div class="cd-lab" data-i18n="cd.days"></div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdH">—</div><div class="cd-lab" data-i18n="cd.hours"></div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdM">—</div><div class="cd-lab" data-i18n="cd.min"></div></div>
+      <div class="cd-unit"><div class="cd-num" id="cdS">—</div><div class="cd-lab" data-i18n="cd.sec"></div></div>
     </div>
 
     <div class="progress-shell">
@@ -58,131 +93,132 @@
     </div>
   </section>
 
+  <!-- ══════════════ UBICACIÓ ══════════════ -->
+  <div class="locbar">
+    <button class="chip accent" id="btnGeo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <span id="geoLabel" data-i18n="app.geo"></span>
+    </button>
+    <span class="chip" id="locChip"></span>
+  </div>
+
+  <!-- ══════════════ AVISOS ══════════════ -->
+  <div id="alerts"></div>
+
   <!-- ══════════════ FASES ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Fases del eclipse en tu posición</h2>
+    <h2><span class="dot"></span><span data-i18n="card.phases"></span></h2>
     <div class="phases" id="phases"></div>
-    <div class="muted" style="margin-top:12px">
-      Horas en tu zona horaria local. «Alt» es la altura del Sol sobre el horizonte en ese instante.
-    </div>
+    <div class="muted" style="margin-top:12px" data-i18n="phases.note"></div>
   </section>
 
-  <!-- ══════════════ SIMULACIÓN EN VIVO ══════════════ -->
+  <!-- ══════════════ SIMULACIÓ ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Simulación en tiempo real</h2>
+    <h2><span class="dot"></span><span data-i18n="card.sim"></span></h2>
     <div class="sim-wrap">
       <canvas id="simCanvas" width="640" height="640"></canvas>
       <div class="sim-readout">
-        <div class="ro"><div class="ro-v" id="roMag">0.000</div><div class="ro-l">Magnitud</div></div>
-        <div class="ro"><div class="ro-v" id="roObs">0 %</div><div class="ro-l">Sol cubierto</div></div>
-        <div class="ro"><div class="ro-v" id="roPhase">—</div><div class="ro-l">Fase</div></div>
+        <div class="ro"><div class="ro-v" id="roMag">—</div><div class="ro-l" data-i18n="ro.mag"></div></div>
+        <div class="ro"><div class="ro-v" id="roObs">—</div><div class="ro-l" data-i18n="ro.obs"></div></div>
+        <div class="ro"><div class="ro-v" id="roPhase">—</div><div class="ro-l" data-i18n="ro.phase"></div></div>
       </div>
       <div class="scrub">
         <div class="scrub-row">
-          <span>Explorar el eclipse</span>
-          <b id="scrubTime">EN VIVO</b>
+          <span data-i18n="scrub.explore"></span>
+          <b id="scrubTime" data-i18n="scrub.live"></b>
         </div>
         <input type="range" id="scrub" min="-100" max="100" value="0" step="0.1">
         <div class="scrub-row" style="margin:6px 0 0">
-          <span class="muted">Arrastra para adelantar / retroceder</span>
-          <button class="city-btn" id="scrubReset">Volver a directo</button>
+          <span class="muted" data-i18n="scrub.drag"></span>
+          <button class="city-btn" id="scrubReset" data-i18n="scrub.back"></button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ══════════════ POSICIÓN DEL SOL ══════════════ -->
+  <!-- ══════════════ POSICIÓ DEL SOL ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Dónde está el Sol ahora mismo</h2>
+    <h2><span class="dot"></span><span data-i18n="card.sun"></span></h2>
     <div class="sunpos">
       <canvas id="compass" width="320" height="320"></canvas>
       <div class="sunpos-data">
-        <div class="spd"><span class="spd-l">Azimut (desde el Norte)</span><span class="spd-v" id="sunAz">—</span></div>
-        <div class="spd"><span class="spd-l">Altura sobre el horizonte</span><span class="spd-v" id="sunAlt">—</span></div>
-        <div class="spd"><span class="spd-l">Orientación</span><span class="spd-v" id="sunDir">—</span></div>
-        <div class="spd"><span class="spd-l">Ocaso hoy</span><span class="spd-v" id="sunSet">—</span></div>
+        <div class="spd"><span class="spd-l" data-i18n="sun.az"></span><span class="spd-v" id="sunAz">—</span></div>
+        <div class="spd"><span class="spd-l" data-i18n="sun.alt"></span><span class="spd-v" id="sunAlt">—</span></div>
+        <div class="spd"><span class="spd-l" data-i18n="sun.dir"></span><span class="spd-v" id="sunDir">—</span></div>
+        <div class="spd"><span class="spd-l" data-i18n="sun.set"></span><span class="spd-v" id="sunSet">—</span></div>
       </div>
     </div>
-    <div class="muted" style="margin-top:12px" id="sunNote"></div>
+    <div class="muted" style="margin-top:12px" data-i18n="sun.note"></div>
   </section>
 
-  <!-- ══════════════ DATOS LOCALES ══════════════ -->
+  <!-- ══════════════ DADES LOCALS ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Circunstancias locales</h2>
+    <h2><span class="dot"></span><span data-i18n="card.local"></span></h2>
     <div class="grid2" id="stats"></div>
   </section>
 
   <!-- ══════════════ MAPA ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Franja de totalidad</h2>
+    <h2><span class="dot"></span><span data-i18n="card.band"></span></h2>
     <div id="map"></div>
     <div class="map-legend">
-      <span><i style="background:#ffab3d"></i>Línea central</span>
-      <span><i style="background:rgba(255,171,61,.5)"></i>Banda de totalidad</span>
-      <span><i style="background:#4fd6ff"></i>Tu posición</span>
+      <span><i style="background:#ffab3d"></i><span data-i18n="legend.center"></span></span>
+      <span><i style="background:rgba(255,171,61,.5)"></i><span data-i18n="legend.band"></span></span>
+      <span><i style="background:#4fd6ff"></i><span data-i18n="legend.you"></span></span>
     </div>
     <div class="muted" id="mapNote" style="margin-top:10px"></div>
   </section>
 
-  <!-- ══════════════ CIUDADES ══════════════ -->
+  <!-- ══════════════ CIUTATS ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Ciudades de referencia</h2>
+    <h2><span class="dot"></span><span data-i18n="card.cities"></span></h2>
     <div class="cities" id="cities"></div>
-    <div class="muted" style="margin-top:12px">En <b>naranja</b>, las que están dentro de la franja de totalidad.</div>
+    <div class="muted" style="margin-top:12px" data-i18n="cities.note"></div>
   </section>
 
-  <!-- ══════════════ SEGURIDAD ══════════════ -->
+  <!-- ══════════════ SEGURETAT ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Seguridad y consejos</h2>
+    <h2><span class="dot"></span><span data-i18n="card.safety"></span></h2>
     <div class="alert danger">
-      <span class="alert-ico">⛔</span>
-      <div><b>Nunca mires al Sol sin filtro homologado.</b> Necesitas gafas de eclipse certificadas <b>ISO 12312-2</b>. Las gafas de sol, radiografías, CDs o cristales ahumados <b>no sirven</b> y pueden causar ceguera permanente.</div>
+      <span class="alert-ico">⛔</span><div data-i18n="safety.1"></div>
     </div>
     <div class="alert ok">
-      <span class="alert-ico">👁️</span>
-      <div><b>Solo durante la totalidad</b> (entre C2 y C3) puedes y debes mirar a simple vista: es el único momento en que se ve la corona. Vuelve a ponerte el filtro <b>en cuanto asome el primer destello</b>.</div>
+      <span class="alert-ico">👁️</span><div data-i18n="safety.2"></div>
     </div>
     <div class="alert info">
-      <span class="alert-ico">📷</span>
-      <div>Cámaras, prismáticos y telescopios necesitan <b>filtro solar delante del objetivo</b>. Un filtro de ocular puede reventar por el calor.</div>
+      <span class="alert-ico">📷</span><div data-i18n="safety.3"></div>
     </div>
     <div class="alert warn">
-      <span class="alert-ico">🏔️</span>
-      <div>En España el eclipse ocurre con el Sol <b>muy bajo</b> sobre el horizonte oeste. Busca un mirador despejado: una colina, la costa o un llano sin montañas al oeste. <b>Comprueba el horizonte el día antes a la misma hora.</b></div>
+      <span class="alert-ico">🏔️</span><div data-i18n="safety.4"></div>
     </div>
   </section>
 
-  <!-- ══════════════ ACCIONES ══════════════ -->
+  <!-- ══════════════ EINES ══════════════ -->
   <section class="card">
-    <h2><span class="dot"></span>Herramientas</h2>
+    <h2><span class="dot"></span><span data-i18n="card.tools"></span></h2>
     <div class="cities">
-      <button class="city-btn" id="btnICS">📅 Añadir al calendario</button>
-      <button class="city-btn" id="btnNotify">🔔 Avisos en el móvil</button>
-      <button class="city-btn" id="btnShare">🔗 Compartir</button>
-      <button class="city-btn" id="btnInstall">⬇️ Instalar la app</button>
+      <button class="city-btn" id="btnICS" data-i18n="tools.ics"></button>
+      <button class="city-btn" id="btnNotify" data-i18n="tools.notify"></button>
+      <button class="city-btn" id="btnShare" data-i18n="tools.share"></button>
+      <button class="city-btn" id="btnInstall" data-i18n="tools.install"></button>
     </div>
   </section>
 
   <footer>
-    <p class="muted">
-      Cálculos derivados de los <b>elementos besselianos de la NASA/GSFC</b> (F. Espenak),
-      efemérides VSOP87/ELP2000-85, ΔT = 71.4 s. Todo se calcula en tu dispositivo, sin servidor.<br>
-      Verificado contra los datos del <b>IGN</b> (Oviedo: magnitud 1.015, totalidad 1m 48s).<br><br>
-      Hecho con cariño para los que llevan décadas esperando este día. ☀️🌑
-    </p>
+    <p class="muted" data-i18n="footer"></p>
   </footer>
 </div>
 
-<!-- ══════════════ BOTONERA FLOTANTE ══════════════ -->
+<!-- ══════════════ BOTONERA FLOTANT ══════════════ -->
 <div class="dock">
   <button class="btn btn-ar" id="btnAR">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M3 8V5a2 2 0 012-2h3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M21 16v3a2 2 0 01-2 2h-3"/>
       <circle cx="12" cy="12" r="3.2"/>
     </svg>
-    Modo Realidad Aumentada
+    <span data-i18n="dock.ar"></span>
   </button>
-  <button class="btn btn-ghost" id="btnTop" title="Arriba">↑</button>
+  <button class="btn btn-ghost" id="btnTop" title="↑">↑</button>
 </div>
 
 <!-- ══════════════ VISTA AR ══════════════ -->
@@ -191,21 +227,22 @@
   <canvas id="arCanvas"></canvas>
   <div class="ar-ui">
     <div class="ar-top">
-      <div class="ar-pill" id="arInfo">Iniciando cámara…</div>
+      <div class="ar-pill" id="arInfo" data-i18n="ar.starting"></div>
       <button class="ar-close" id="arClose">✕</button>
     </div>
     <div class="ar-bottom">
-      <div class="ar-hint" id="arHint">Apunta el móvil hacia donde marca la flecha</div>
+      <div class="ar-hint" id="arHint" data-i18n="ar.hintDefault"></div>
       <div class="ar-controls">
-        <button class="ar-btn on" id="arTrack">Trayectoria</button>
-        <button class="ar-btn on" id="arDisk">Disco solar</button>
-        <button class="ar-btn" id="arCal" title="Toca dos veces para reiniciar">🎯 Calibrar con el Sol</button>
+        <button class="ar-btn on" id="arTrack" data-i18n="ar.track"></button>
+        <button class="ar-btn on" id="arDisk" data-i18n="ar.disk"></button>
+        <button class="ar-btn" id="arCal" data-i18n="ar.cal"></button>
       </div>
     </div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/astro.js"></script>
 <script src="js/eclipse.js"></script>
 <script src="js/ar.js"></script>
