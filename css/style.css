@@ -142,7 +142,7 @@ h1 {
 
 /* Tarjeta destacada de la voz */
 .tool-hero {
-  margin-bottom: 8px; padding: 12px 14px;
+  margin-bottom: 6px; padding: 10px 12px;
   background: linear-gradient(115deg, rgba(255,171,61,.10), rgba(155,123,255,.08));
   border-color: rgba(255,171,61,.30);
 }
@@ -166,16 +166,24 @@ h1 {
 .tool-hero.on .tool-sw { background: var(--corona); }
 .tool-hero.on .tool-sw::after { left: 19px; background: #1a0f00; }
 
-/* Rejilla de herramientas secundarias */
+/* Rejilla de herramientas secundarias: SIEMPRE 5 en una sola línea.
+   Con 5 columnas en un móvil de 390 px cada celda queda en ~66 px, así que
+   la segunda línea descriptiva no cabe sin amontonarse: se queda solo el
+   icono y su etiqueta (la descripción sigue en el tooltip). */
 .tool-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
 }
 .tool-grid .tool {
   flex-direction: column; align-items: center; text-align: center;
-  gap: 3px; padding: 9px 5px;
+  gap: 2px; padding: 7px 2px; min-width: 0;
 }
-.tool-grid .tool b { font-size: 11px; }
-.tool-grid .tool small { font-size: 9px; }
+.tool-grid .tool .tool-ico { font-size: 14px; }
+.tool-grid .tool b {
+  font-size: clamp(8px, 2.4vw, 10px); line-height: 1.15;
+  font-weight: 600; letter-spacing: -.02em;
+  width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tool-grid .tool small { display: none; }
 #voiceNote { margin-top: 8px; text-align: center; font-size: 10.5px; }
 
 /* ---------- Cuenta atrás ---------- */
