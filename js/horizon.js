@@ -279,6 +279,11 @@
   const COARSE_PER_SPOT = 1 + 3 * COARSE_D.length;
   const coarseCost = n => n * COARSE_PER_SPOT;
 
+  /** ¿Ya tenemos guardado el horizonte de este sitio? (no cuesta red) */
+  function isCached(s) {
+    return !!Net.get(`hz1:${s.lat.toFixed(4)},${s.lon.toFixed(4)},${Math.round(s.azMax || 286)}`, null);
+  }
+
   /**
    * Elevación de una lista de puntos, en lotes de 100 y de tres en tres.
    * Devuelve null en las posiciones que no se hayan podido resolver.
@@ -326,26 +331,43 @@
   async function horizonMany(spots, onProgress) {
     if (!spots.length) return [];
 
+    /* El relieve no cambia nunca, así que cada sitio ya calculado se guarda y
+       no se vuelve a pedir. Sin esto, comparar las cuatro bandas de distancia
+       era imposible: cada búsqueda gastaba la cuota entera del minuto y las
+       tres siguientes fallaban. Con la caché, repetir una búsqueda o mirar una
+       banda que solapa con otra ya mirada no cuesta ni una petición. */
+    const keyOf = s => `hz1:${s.lat.toFixed(4)},${s.lon.toFixed(4)},${Math.round(s.azMax || 286)}`;
+
+    const out = new Array(spots.length).fill(null);
+    const need = [];
+    spots.forEach((s, i) => {
+      const hit = Net.get(keyOf(s), null);
+      if (hit) out[i] = hit.value; else need.push({ i, s });
+    });
+    if (!need.length) {
+      if (onProgress) onProgress(1, 1);
+      return out;
+    }
+
     // Tres rayos alrededor del azimut del máximo de cada sitio: es la
     // dirección que de verdad decide si se ve la totalidad.
     const azsOf = s => { const c = s.azMax || 286; return [c - 2, c, c + 2]; };
 
     const perSpot = 1 + 3 * COARSE_D.length;
     const pts = [];
-    for (const s of spots) {
-      pts.push({ lat: s.lat, lon: s.lon });
-      for (const az of azsOf(s)) {
-        for (const d of COARSE_D) pts.push(destPoint(s.lat, s.lon, az, d));
+    for (const n of need) {
+      pts.push({ lat: n.s.lat, lon: n.s.lon });
+      for (const az of azsOf(n.s)) {
+        for (const d of COARSE_D) pts.push(destPoint(n.s.lat, n.s.lon, az, d));
       }
     }
 
     const elev = await elevations(pts, onProgress);
 
-    const out = [];
-    for (let i = 0; i < spots.length; i++) {
-      const base = i * perSpot;
+    for (let j = 0; j < need.length; j++) {
+      const base = j * perSpot;
       const obsElev = elev[base];
-      if (obsElev == null) { out.push(null); continue; }
+      if (obsElev == null) continue;
       let horizon = 0, ok = false;
       for (let k = 1; k < perSpot; k++) {
         const h = elev[base + k];
@@ -355,7 +377,10 @@
         const a = elevationAngle(h - obsElev, d);
         if (a > horizon) horizon = a;
       }
-      out.push(ok ? { horizon: +horizon.toFixed(3), obsElev } : null);
+      if (!ok) continue;
+      const val = { horizon: +horizon.toFixed(3), obsElev };
+      out[need[j].i] = val;
+      Net.set(keyOf(need[j].s), val);
     }
     return out;
   }
@@ -368,7 +393,7 @@
 
   global.Horizon = {
     profile, cachedProfile, horizonAt, analyse, sunTrack, horizonMany,
-    elevations, isSea, elevationAngle, destPoint, fanFor, fanOf, coarseCost,
+    elevations, isSea, elevationAngle, destPoint, fanFor, fanOf, coarseCost, isCached,
     AZ_FROM, AZ_TO, DISTANCES, COARSE_PER_SPOT
   };
 })(window);

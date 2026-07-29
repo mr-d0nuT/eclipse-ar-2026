@@ -15,7 +15,7 @@
   // Datos descargados para la ubicación actual
   let data = { key: null, horizon: null, analysis: null, weather: null, summary: null, clima: null };
   let busy = { verdict: false, horizon: false, weather: false, clima: false, plan: false };
-  let planState = { range: { min: 5, max: 25 }, rangeLabel: '5-25 km', results: null, heatLayer: null };
+  let planState = { range: { min: 1, max: 25 }, rangeLabel: '> 1 km', results: null, heatLayer: null };
 
   const locKey = s => s.lat.toFixed(3) + ',' + s.lon.toFixed(3);
   const num = (v, d) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d == null ? 1 : d);

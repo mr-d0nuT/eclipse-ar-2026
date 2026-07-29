@@ -426,14 +426,28 @@
     }
     for (const p of cands) p.q = quality(p);
 
-    // Cuántos finalistas caben en la cuota de elevación que quede
-    const perSpot = Horizon.COARSE_PER_SPOT + 3;
-    const nFinal = Math.max(0, Math.min(N_FINALISTS, Math.floor(Net.spare() / perSpot)));
-    if (nFinal < MIN_FINALISTS) throw Net.rateError(Net.waitFor(N_FINALISTS * perSpot));
-
     // La separación mínima escala con la banda: en un radio de un kilómetro,
     // exigir tres de distancia dejaría un solo resultado.
-    const finalists = topDiverse(cands, nFinal, Math.max(0.15, max / 8));
+    let finalists = topDiverse(cands, N_FINALISTS, Math.max(0.15, max / 8));
+
+    /* El relieve de un sitio ya mirado está guardado y no cuesta red, así que
+       solo se paga por los que faltan. Sin esta cuenta, repetir una búsqueda o
+       mirar la otra banda se rechazaba por falta de cuota aunque estuviera
+       entera en la caché. Si no da para todos, se sueltan los peores no
+       guardados en vez de abandonar. */
+    const perSpot = Horizon.COARSE_PER_SPOT + 3;
+    let budget = Math.floor(Net.spare() / perSpot);
+    if (finalists.filter(p => !Horizon.isCached(p)).length > budget) {
+      const keep = [];
+      for (const p of finalists) {          // vienen ordenados por calidad
+        if (Horizon.isCached(p)) keep.push(p);
+        else if (budget > 0) { keep.push(p); budget--; }
+      }
+      finalists = keep;
+    }
+    if (finalists.length < MIN_FINALISTS) {
+      throw Net.rateError(Net.waitFor(MIN_FINALISTS * perSpot));
+    }
 
     // Carreteras y edificios, en una sola consulta
     rep('roads', 0, 1);
