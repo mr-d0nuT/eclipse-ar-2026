@@ -1,16 +1,24 @@
 /* Service worker — funcionamiento sin conexión.
    Importante: el día del eclipse puede que no haya cobertura en el campo. */
-const CACHE = 'eclipse-ar-2026-v8';
+const CACHE = 'eclipse-ar-2026-v9';
 const ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=6',
-  './js/i18n.js?v=6',
-  './js/voice.js?v=6',
-  './js/astro.js?v=6',
-  './js/eclipse.js?v=6',
-  './js/ar.js?v=6',
-  './js/app.js?v=6',
+  './css/style.css?v=7',
+  './js/i18n.js?v=7',
+  './js/i18n2.js?v=7',
+  './js/netcache.js?v=7',
+  './js/places.js?v=7',
+  './js/spots.js?v=7',
+  './js/voice.js?v=7',
+  './js/astro.js?v=7',
+  './js/eclipse.js?v=7',
+  './js/horizon.js?v=7',
+  './js/weather.js?v=7',
+  './js/planner.js?v=7',
+  './js/ar.js?v=7',
+  './js/app.js?v=7',
+  './js/panels.js?v=7',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -35,6 +43,12 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+
+  // Las APIs (elevación, nubes) van directas a la red y punto. Sin esto caen
+  // en el respaldo genérico de abajo, que ante un fallo devuelve el index.html
+  // y le entrega al cliente una página HTML donde esperaba JSON.
+  // Quien decide qué hacer sin cobertura es Net.cached(), no el worker.
+  if (/open-meteo\.com|overpass-api\.de/.test(req.url)) return;
 
   // Los tiles del mapa y Leaflet: red primero, caché como respaldo
   if (/basemaps|unpkg\.com/.test(req.url)) {

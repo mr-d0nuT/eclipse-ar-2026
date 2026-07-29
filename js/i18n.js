@@ -1125,8 +1125,22 @@
     listeners.forEach(fn => { try { fn(lang); } catch (e) {} });
   }
 
+  /**
+   * Añade cadenas a los diccionarios ya cargados.
+   * Las funciones nuevas traen sus traducciones en su propio fichero en vez
+   * de engordar los cinco bloques de aquí.
+   * @param {Object<string, Object<string,string>>} more { ca: {...}, es: {...} }
+   */
+  function extend(more) {
+    for (const lang in more) {
+      if (!DICT[lang]) DICT[lang] = {};
+      const src = more[lang];
+      for (const k in src) DICT[lang][k] = src[k];
+    }
+  }
+
   global.I18N = {
-    t, cardinal, setLang, applyStatic, onChange,
+    t, cardinal, setLang, applyStatic, onChange, extend,
     get lang() { return current; },
     get locale() { return t('locale'); },
     LANGS

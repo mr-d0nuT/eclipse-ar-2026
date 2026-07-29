@@ -113,6 +113,10 @@
     updateMap();
     setScrubRange();
     tick();
+    // Los paneles nuevos (veredicto, núvols, horitzó, planificador) se cargan
+    // después que este fichero, así que en el arranque aún no existen: ellos
+    // mismos se pintan solos al cargar.
+    if (window.Panels) Panels.refresh();
   }
 
   function now() { return new Date(Date.now() + state.offsetMs); }
@@ -716,14 +720,9 @@
   }
 
   function updateMap() {
-    const near = Eclipse.nearestCentralPoint(state.lat, state.lon);
-    $('mapNote').innerHTML = near
-      ? T('map.note', {
-          km: Math.round(near.distanceKm), dir: cardinal(near.bearing),
-          lat: near.point.lat.toFixed(2), lon: near.point.lon.toFixed(2)
-        })
-      : T('map.noteSimple');
-
+    // La nota bajo el mapa la escribe panels.js: en vez de la distancia a la
+    // línea central (que desde Barcelona apunta 180 km mar adentro) dice cuál
+    // es el mejor sitio al que puedes llegar de verdad.
     if (typeof L === 'undefined') { $('map').innerHTML = `<div style="padding:20px" class="muted">${T('map.offline')}</div>`; return; }
     if (!state.map) {
       state.map = L.map('map', { zoomControl: true, attributionControl: false })
@@ -1047,6 +1046,14 @@
   setTimeout(sayWelcome, 4000);
 
   window.__eclipseTick = tick;     // permite simular el paso del tiempo
+
+  /* Lo que panels.js necesita de aquí. Este fichero sigue siendo el dueño del
+     estado; los paneles solo leen, formatean y piden cambios de ubicación. */
+  window.EclipseApp = {
+    get state() { return state; },
+    setLocation, recompute, now,
+    fmtTime, fmtHM, fmtDur, cardinal
+  };
 
   setInterval(tick, 1000);
   setInterval(() => { if (state.live) refreshSunset(); }, 600000);

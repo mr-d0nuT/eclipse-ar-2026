@@ -10,6 +10,20 @@ El primer eclipse total visible desde la España peninsular en más de un siglo.
 
 ## ✨ Qué hace
 
+La app se organiza en tres pestañas: **Ahora** (cuánto falta y si lo verás), **Planificar** (a dónde ir) y **Cielo** (simulación y datos).
+
+### Lo que decide si ves el eclipse
+
+| | |
+|---|---|
+| 🚦 **Pronóstico** | Junta las tres cosas que mandan —si hay totalidad, si el relieve te deja verla y si habrá nubes— en un semáforo. Con el Sol a 4° de altura, una nubosidad baja del 77 % convierte el mejor sitio del país en nada. |
+| ⛰️ **¿Te tapa el terreno?** | Descarga el relieve real en el abanico que recorre el Sol y calcula, con curvatura terrestre y refracción, a qué altura está tu horizonte. Te dice el margen en grados y a qué hora se esconde el Sol tras el monte. Con la silueta del terreno y el recorrido del Sol dibujados encima. |
+| ☁️ **Nubes previstas** | Hora a hora, con la nubosidad **baja** destacada aparte: es la que se sienta justo delante de un Sol tan bajo. Cada dato lleva su fiabilidad, porque a dos semanas vista una previsión no es accionable. |
+| 📊 **Climatología** | Lo que sí sirve hoy: qué hizo el cielo en ese punto los últimos diez 12 de agosto a la misma hora. «5 de cada 9 años estaba despejado.» |
+| 🗺️ **¿Dónde me pongo?** | Busca miradores, collados, cimas y áreas de descanso **reales** a tu alrededor y los ordena por segundos de totalidad, altura del Sol, altitud del sitio, relieve que te tapa, nubes previstas y **si se llega en coche** (carretera a menos de 300 m, comprobada en OpenStreetMap). Con nombre, altitud y enlace para navegar hasta allí. |
+
+### Y todo lo de antes
+
 | | |
 |---|---|
 | ⏱️ **Cuenta atrás inteligente** | Cambia sola de objetivo: C1 → C2 → máximo → C3 → C4. Durante la totalidad cuenta el tiempo que te queda. |
@@ -97,20 +111,39 @@ python3 -m http.server 8000
 ## 🧩 Estructura
 
 ```
-├── index.html                 Interfaz
+├── index.html                 Interfaz (tres pestañas)
 ├── css/style.css              Estilos
 ├── js/
-│   ├── i18n.js                Traducciones ca / es / en
+│   ├── i18n.js                Traducciones ca / es / en / fr / de
+│   ├── i18n2.js               Traducciones de las funciones nuevas
 │   ├── astro.js               Posición solar, tiempo sidéreo, refracción
 │   ├── eclipse.js             Motor besseliano: contactos, magnitud, franja
+│   ├── netcache.js            Peticiones, caché persistente y control de cuota
+│   ├── horizon.js             Perfil de horizonte desde datos de elevación
+│   ├── weather.js             Nubosidad prevista y climatología histórica
+│   ├── spots.js               Miradores, collados y cimas (OpenStreetMap)
+│   ├── places.js              Referencias geográficas
+│   ├── planner.js             Puntuación y ranking de sitios
 │   ├── ar.js                  Realidad aumentada (cámara + IMU + brújula)
-│   └── app.js                 Estado, UI, cuenta atrás, mapa, alarmas
+│   ├── app.js                 Estado, cuenta atrás, mapa, alarmas
+│   └── panels.js              Pestañas, pronóstico, horizonte y planificador
 ├── sw.js                      Service worker (offline)
 ├── manifest.webmanifest       PWA
 └── icons/                     Iconos
 ```
 
-Dependencias externas: solo **Leaflet** para el mapa (vía CDN). Todo lo demás es código propio.
+Dependencias externas: **Leaflet** para el mapa (vía CDN). Sin build, sin claves de API y sin servidor propio.
+
+### Datos externos
+
+| Qué | Fuente | Clave |
+|---|---|---|
+| Relieve del horizonte | [Open-Meteo Elevation](https://open-meteo.com/en/docs/elevation-api) (Copernicus GLO-90) | no |
+| Nubes previstas | [Open-Meteo Forecast](https://open-meteo.com/) | no |
+| Climatología | [Open-Meteo Archive](https://open-meteo.com/en/docs/historical-weather-api) | no |
+| Miradores y carreteras | [OpenStreetMap](https://www.openstreetmap.org/copyright) vía [Overpass](https://overpass-api.de/) | no |
+
+Todo lo descargado se guarda: el día del eclipse puede que no haya cobertura, y entonces la app sirve el último dato conocido diciendo de cuándo es. Open-Meteo corta a los 600 sondeos por minuto, así que la app lleva su propia cuenta del gasto y avisa con los segundos que faltan en vez de fallar a medias.
 
 ---
 

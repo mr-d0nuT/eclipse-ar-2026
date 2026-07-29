@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 
@@ -74,57 +74,7 @@
     <p class="subtitle" data-i18n="app.subtitle"></p>
   </header>
 
-  <!-- ══════════════ COMPTE ENRERE ══════════════ -->
-  <section class="card">
-    <div class="countdown-label" id="cdLabel"></div>
-    <div class="countdown tappable" id="countdown" role="button" tabindex="0">
-      <div class="cd-unit"><div class="cd-num" id="cdD">—</div><div class="cd-lab" data-i18n="cd.days"></div></div>
-      <div class="cd-unit"><div class="cd-num" id="cdH">—</div><div class="cd-lab" data-i18n="cd.hours"></div></div>
-      <div class="cd-unit"><div class="cd-num" id="cdM">—</div><div class="cd-lab" data-i18n="cd.min"></div></div>
-      <div class="cd-unit"><div class="cd-num" id="cdS">—</div><div class="cd-lab" data-i18n="cd.sec"></div></div>
-    </div>
-    <div class="cd-hint" data-i18n="cd.tap"></div>
-
-    <div class="progress-shell">
-      <div class="progress-track">
-        <div class="progress-fill" id="progFill"></div>
-        <div class="progress-totality hidden" id="progTot"></div>
-      </div>
-      <div class="progress-marks" id="progMarks"></div>
-    </div>
-  </section>
-
-  <!-- ══════════════ EINES ══════════════ -->
-  <section class="toolbar">
-    <button class="tool tool-hero" id="btnVoice">
-      <span class="tool-ico">🔊</span>
-      <span class="tool-txt">
-        <b id="voiceTitle"></b>
-        <small data-i18n="tl.voiceDesc"></small>
-      </span>
-      <span class="tool-sw" aria-hidden="true"></span>
-    </button>
-    <div class="tool-grid">
-      <button class="tool" id="btnBrief">
-        <span class="tool-ico">🗣️</span><b data-i18n="tl.brief"></b><small data-i18n="tl.briefDesc"></small>
-      </button>
-      <button class="tool" id="btnICS">
-        <span class="tool-ico">📅</span><b data-i18n="tl.ics"></b><small data-i18n="tl.icsDesc"></small>
-      </button>
-      <button class="tool" id="btnNotify">
-        <span class="tool-ico">🔔</span><b data-i18n="tl.notify"></b><small data-i18n="tl.notifyDesc"></small>
-      </button>
-      <button class="tool" id="btnShare">
-        <span class="tool-ico">🔗</span><b data-i18n="tl.share"></b><small data-i18n="tl.shareDesc"></small>
-      </button>
-      <button class="tool" id="btnInstall">
-        <span class="tool-ico">⬇️</span><b data-i18n="tl.install"></b><small data-i18n="tl.installDesc"></small>
-      </button>
-    </div>
-    <div class="muted" id="voiceNote"></div>
-  </section>
-
-  <!-- ══════════════ UBICACIÓ ══════════════ -->
+  <!-- ══════════════ UBICACIÓ (sempre visible) ══════════════ -->
   <div class="locbar">
     <button class="chip accent" id="btnGeo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
@@ -133,113 +83,270 @@
     <span class="chip" id="locChip"></span>
   </div>
 
-  <!-- ══════════════ AVISOS ══════════════ -->
-  <div id="alerts"></div>
 
-  <!-- ══════════════ FASES ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.phases"></span></h2>
-    <div class="phases" id="phases"></div>
-    <div class="muted" style="margin-top:12px" data-i18n="phases.note"></div>
-  </section>
+  <!-- ═════════════════════════════════════════════════════════════════
+       PESTANYA · ARA
+       ═════════════════════════════════════════════════════════════════ -->
+  <div class="pane on" id="pane-now" role="tabpanel">
 
-  <!-- ══════════════ SIMULACIÓ ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.sim"></span></h2>
-    <div class="sim-wrap">
-      <canvas id="simCanvas" width="640" height="640"></canvas>
-      <div class="sim-readout">
-        <div class="ro"><div class="ro-v" id="roMag">—</div><div class="ro-l" data-i18n="ro.mag"></div></div>
-        <div class="ro"><div class="ro-v" id="roObs">—</div><div class="ro-l" data-i18n="ro.obs"></div></div>
-        <div class="ro"><div class="ro-v" id="roPhase">—</div><div class="ro-l" data-i18n="ro.phase"></div></div>
+    <!-- ── Compte enrere ── -->
+    <section class="card">
+      <div class="countdown-label" id="cdLabel"></div>
+      <div class="countdown tappable" id="countdown" role="button" tabindex="0">
+        <div class="cd-unit"><div class="cd-num" id="cdD">—</div><div class="cd-lab" data-i18n="cd.days"></div></div>
+        <div class="cd-unit"><div class="cd-num" id="cdH">—</div><div class="cd-lab" data-i18n="cd.hours"></div></div>
+        <div class="cd-unit"><div class="cd-num" id="cdM">—</div><div class="cd-lab" data-i18n="cd.min"></div></div>
+        <div class="cd-unit"><div class="cd-num" id="cdS">—</div><div class="cd-lab" data-i18n="cd.sec"></div></div>
       </div>
-      <div class="scrub">
-        <div class="scrub-row">
-          <span data-i18n="scrub.explore"></span>
-          <b id="scrubTime" data-i18n="scrub.live"></b>
+      <div class="cd-hint" data-i18n="cd.tap"></div>
+
+      <div class="progress-shell">
+        <div class="progress-track">
+          <div class="progress-fill" id="progFill"></div>
+          <div class="progress-totality hidden" id="progTot"></div>
         </div>
-        <input type="range" id="scrub" min="-100" max="100" value="0" step="0.1">
-        <div class="scrub-row" style="margin:6px 0 0">
-          <span class="muted" data-i18n="scrub.drag"></span>
-          <button class="city-btn" id="scrubReset" data-i18n="scrub.back"></button>
+        <div class="progress-marks" id="progMarks"></div>
+      </div>
+    </section>
+
+    <!-- ── Veredicte ── -->
+    <section class="card verdict" id="verdictCard">
+      <h2><span class="dot"></span><span data-i18n="card.verdict"></span></h2>
+      <div class="vd-head">
+        <div class="vd-badge" id="vdBadge" data-i18n="vd.unknown"></div>
+        <div class="vd-headline" id="vdHeadline"></div>
+      </div>
+      <div class="vd-rows">
+        <div class="vd-row">
+          <span class="vd-l" data-i18n="vd.rowHorizon"></span>
+          <span class="vd-v" id="vdHorizon">—</span>
+        </div>
+        <div class="vd-row">
+          <span class="vd-l" data-i18n="vd.rowClouds"></span>
+          <span class="vd-v" id="vdClouds">—</span>
         </div>
       </div>
-    </div>
-  </section>
+      <button class="btn-wide" id="btnVerdict" data-i18n="vd.calc"></button>
+      <div class="muted" id="vdNote" data-i18n="vd.intro"></div>
+    </section>
 
-  <!-- ══════════════ POSICIÓ DEL SOL ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.sun"></span></h2>
-    <div class="sunpos">
-      <canvas id="compass" width="320" height="320"></canvas>
-      <div class="sunpos-data">
-        <div class="spd"><span class="spd-l" data-i18n="sun.az"></span><span class="spd-v" id="sunAz">—</span></div>
-        <div class="spd"><span class="spd-l" data-i18n="sun.alt"></span><span class="spd-v" id="sunAlt">—</span></div>
-        <div class="spd"><span class="spd-l" data-i18n="sun.dir"></span><span class="spd-v" id="sunDir">—</span></div>
-        <div class="spd"><span class="spd-l" data-i18n="sun.set"></span><span class="spd-v" id="sunSet">—</span></div>
+    <!-- ── Avisos ── -->
+    <div id="alerts"></div>
+
+    <!-- ── Núvols ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.weather"></span></h2>
+      <div id="wxBody" class="wx-body"></div>
+      <button class="btn-wide ghost" id="btnWeather" data-i18n="wx.load"></button>
+      <div class="muted wx-warn" data-i18n="wx.lowWarn"></div>
+      <div class="wx-clima">
+        <button class="btn-wide ghost" id="btnClima" data-i18n="wx.climaBtn"></button>
+        <div id="climaBody"></div>
       </div>
-    </div>
-    <div class="muted" style="margin-top:12px" data-i18n="sun.note"></div>
-  </section>
+    </section>
 
-  <!-- ══════════════ DADES LOCALS ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.local"></span></h2>
-    <div class="grid2" id="stats"></div>
-  </section>
+    <!-- ── Horitzó ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.horizon"></span></h2>
+      <div class="muted" data-i18n="hz.intro"></div>
+      <div class="hz-wrap hidden" id="hzWrap">
+        <canvas id="hzCanvas" width="760" height="380"></canvas>
+        <div class="hz-legend">
+          <span><i class="sw-terrain"></i><span data-i18n="hz.terrain"></span></span>
+          <span><i class="sw-sun"></i><span data-i18n="hz.sunpath"></span></span>
+        </div>
+      </div>
+      <div id="hzBody"></div>
+      <button class="btn-wide" id="btnHorizon" data-i18n="hz.calc"></button>
+      <div class="muted hz-note" data-i18n="hz.note"></div>
+    </section>
 
-  <!-- ══════════════ MAPA ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.band"></span></h2>
-    <div id="map"></div>
-    <div class="map-legend">
-      <span><i style="background:#ffab3d"></i><span data-i18n="legend.center"></span></span>
-      <span><i style="background:rgba(255,171,61,.5)"></i><span data-i18n="legend.band"></span></span>
-      <span><i style="background:#4fd6ff"></i><span data-i18n="legend.you"></span></span>
-    </div>
-    <div class="muted" id="mapNote" style="margin-top:10px"></div>
-  </section>
+    <!-- ── Eines ── -->
+    <section class="toolbar">
+      <button class="tool tool-hero" id="btnVoice">
+        <span class="tool-ico">🔊</span>
+        <span class="tool-txt">
+          <b id="voiceTitle"></b>
+          <small data-i18n="tl.voiceDesc"></small>
+        </span>
+        <span class="tool-sw" aria-hidden="true"></span>
+      </button>
+      <div class="tool-grid">
+        <button class="tool" id="btnBrief">
+          <span class="tool-ico">🗣️</span><b data-i18n="tl.brief"></b><small data-i18n="tl.briefDesc"></small>
+        </button>
+        <button class="tool" id="btnICS">
+          <span class="tool-ico">📅</span><b data-i18n="tl.ics"></b><small data-i18n="tl.icsDesc"></small>
+        </button>
+        <button class="tool" id="btnNotify">
+          <span class="tool-ico">🔔</span><b data-i18n="tl.notify"></b><small data-i18n="tl.notifyDesc"></small>
+        </button>
+        <button class="tool" id="btnShare">
+          <span class="tool-ico">🔗</span><b data-i18n="tl.share"></b><small data-i18n="tl.shareDesc"></small>
+        </button>
+        <button class="tool" id="btnInstall">
+          <span class="tool-ico">⬇️</span><b data-i18n="tl.install"></b><small data-i18n="tl.installDesc"></small>
+        </button>
+      </div>
+      <div class="muted" id="voiceNote"></div>
+    </section>
+  </div>
 
-  <!-- ══════════════ CIUTATS ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.cities"></span></h2>
-    <div class="cities" id="cities"></div>
-    <div class="muted" style="margin-top:12px" data-i18n="cities.note"></div>
-  </section>
 
-  <!-- ══════════════ SEGURETAT ══════════════ -->
-  <section class="card">
-    <h2><span class="dot"></span><span data-i18n="card.safety"></span></h2>
-    <div class="alert danger">
-      <span class="alert-ico">⛔</span><div data-i18n="safety.1"></div>
-    </div>
-    <div class="alert ok">
-      <span class="alert-ico">👁️</span><div data-i18n="safety.2"></div>
-    </div>
-    <div class="alert info">
-      <span class="alert-ico">📷</span><div data-i18n="safety.3"></div>
-    </div>
-    <div class="alert warn">
-      <span class="alert-ico">🏔️</span><div data-i18n="safety.4"></div>
-    </div>
-  </section>
+  <!-- ═════════════════════════════════════════════════════════════════
+       PESTANYA · PLANIFICAR
+       ═════════════════════════════════════════════════════════════════ -->
+  <div class="pane" id="pane-plan" role="tabpanel">
+
+    <!-- ── On em poso ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.planner"></span></h2>
+      <div class="muted" data-i18n="pl.intro"></div>
+      <div class="pl-radius">
+        <span class="muted" data-i18n="pl.radius"></span>
+        <div class="seg" id="plRadius">
+          <button data-r="25">25 km</button>
+          <button data-r="50">50 km</button>
+          <button data-r="100" class="on">100 km</button>
+          <button data-r="200">200 km</button>
+        </div>
+      </div>
+      <button class="btn-wide" id="btnPlan" data-i18n="pl.search"></button>
+      <div class="muted" id="plStatus"></div>
+      <div class="pl-list" id="plResults"></div>
+      <div class="muted pl-note" data-i18n="pl.note"></div>
+    </section>
+
+    <!-- ── Mapa ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.band"></span></h2>
+      <div id="map"></div>
+      <div class="map-legend">
+        <span><i style="background:#ffab3d"></i><span data-i18n="legend.center"></span></span>
+        <span><i style="background:rgba(255,171,61,.5)"></i><span data-i18n="legend.band"></span></span>
+        <span><i style="background:#4fd6ff"></i><span data-i18n="legend.you"></span></span>
+      </div>
+      <div class="muted" id="mapNote"></div>
+    </section>
+
+    <!-- ── Ciutats ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.cities"></span></h2>
+      <div class="cities" id="cities"></div>
+      <div class="muted" data-i18n="cities.note"></div>
+    </section>
+  </div>
+
+
+  <!-- ═════════════════════════════════════════════════════════════════
+       PESTANYA · CEL
+       ═════════════════════════════════════════════════════════════════ -->
+  <div class="pane" id="pane-sky" role="tabpanel">
+
+    <!-- ── Simulació ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.sim"></span></h2>
+      <div class="sim-wrap">
+        <canvas id="simCanvas" width="640" height="640"></canvas>
+        <div class="sim-readout">
+          <div class="ro"><div class="ro-v" id="roMag">—</div><div class="ro-l" data-i18n="ro.mag"></div></div>
+          <div class="ro"><div class="ro-v" id="roObs">—</div><div class="ro-l" data-i18n="ro.obs"></div></div>
+          <div class="ro"><div class="ro-v" id="roPhase">—</div><div class="ro-l" data-i18n="ro.phase"></div></div>
+        </div>
+        <div class="scrub">
+          <div class="scrub-row">
+            <span data-i18n="scrub.explore"></span>
+            <b id="scrubTime" data-i18n="scrub.live"></b>
+          </div>
+          <input type="range" id="scrub" min="-100" max="100" value="0" step="0.1">
+          <div class="scrub-row" style="margin:6px 0 0">
+            <span class="muted" data-i18n="scrub.drag"></span>
+            <button class="city-btn" id="scrubReset" data-i18n="scrub.back"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Fases ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.phases"></span></h2>
+      <div class="phases" id="phases"></div>
+      <div class="muted" data-i18n="phases.note"></div>
+    </section>
+
+    <!-- ── Posició del Sol ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.sun"></span></h2>
+      <div class="sunpos">
+        <canvas id="compass" width="320" height="320"></canvas>
+        <div class="sunpos-data">
+          <div class="spd"><span class="spd-l" data-i18n="sun.az"></span><span class="spd-v" id="sunAz">—</span></div>
+          <div class="spd"><span class="spd-l" data-i18n="sun.alt"></span><span class="spd-v" id="sunAlt">—</span></div>
+          <div class="spd"><span class="spd-l" data-i18n="sun.dir"></span><span class="spd-v" id="sunDir">—</span></div>
+          <div class="spd"><span class="spd-l" data-i18n="sun.set"></span><span class="spd-v" id="sunSet">—</span></div>
+        </div>
+      </div>
+      <div class="muted" data-i18n="sun.note"></div>
+    </section>
+
+    <!-- ── Dades locals ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.local"></span></h2>
+      <div class="grid2" id="stats"></div>
+    </section>
+
+    <!-- ── Seguretat ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.safety"></span></h2>
+      <div class="alert danger">
+        <span class="alert-ico">⛔</span><div data-i18n="safety.1"></div>
+      </div>
+      <div class="alert ok">
+        <span class="alert-ico">👁️</span><div data-i18n="safety.2"></div>
+      </div>
+      <div class="alert info">
+        <span class="alert-ico">📷</span><div data-i18n="safety.3"></div>
+      </div>
+      <div class="alert warn">
+        <span class="alert-ico">🏔️</span><div data-i18n="safety.4"></div>
+      </div>
+    </section>
+  </div>
 
   <footer>
     <p class="muted" data-i18n="footer"></p>
   </footer>
 </div>
 
-<!-- ══════════════ BOTONERA FLOTANT ══════════════ -->
-<div class="dock">
-  <button class="btn btn-ar" id="btnAR">
+<!-- ══════════════ BARRA DE PESTANYES ══════════════ -->
+<nav class="tabbar" role="tablist">
+  <button class="tabbtn on" data-pane="now" role="tab" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+      <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>
+    </svg>
+    <span data-i18n="tab.now"></span>
+  </button>
+  <button class="tabbtn" data-pane="plan" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+      <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 7 9 4z"/><path d="M9 4v13M15 7v12.5"/>
+    </svg>
+    <span data-i18n="tab.plan"></span>
+  </button>
+  <button class="tabbtn" data-pane="sky" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+      <circle cx="12" cy="12" r="4.2"/>
+      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>
+    </svg>
+    <span data-i18n="tab.sky"></span>
+  </button>
+  <button class="tabbtn tab-ar" id="btnAR">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M3 8V5a2 2 0 012-2h3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M21 16v3a2 2 0 01-2 2h-3"/>
       <circle cx="12" cy="12" r="3.2"/>
     </svg>
-    <span data-i18n="dock.ar"></span>
+    <span data-i18n="dock.arShort"></span>
   </button>
-  <button class="btn btn-ghost" id="btnTop" title="↑">↑</button>
-</div>
+</nav>
 
 <!-- ══════════════ VISTA AR ══════════════ -->
 <div id="arView">
@@ -262,11 +369,19 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/i18n.js?v=6"></script>
-<script src="js/voice.js?v=6"></script>
-<script src="js/astro.js?v=6"></script>
-<script src="js/eclipse.js?v=6"></script>
-<script src="js/ar.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/i18n.js?v=7"></script>
+<script src="js/i18n2.js?v=7"></script>
+<script src="js/netcache.js?v=7"></script>
+<script src="js/places.js?v=7"></script>
+<script src="js/spots.js?v=7"></script>
+<script src="js/voice.js?v=7"></script>
+<script src="js/astro.js?v=7"></script>
+<script src="js/eclipse.js?v=7"></script>
+<script src="js/horizon.js?v=7"></script>
+<script src="js/weather.js?v=7"></script>
+<script src="js/planner.js?v=7"></script>
+<script src="js/ar.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
+<script src="js/panels.js?v=7"></script>
 </body>
 </html>
