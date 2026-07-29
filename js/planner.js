@@ -88,10 +88,31 @@
          : kind ? 0.94 : 1;
   }
 
+  /**
+   * Edificios. El modelo de elevación no los ve, así que sin esto el
+   * planificador manda a una calle de pueblo: el terreno está llano, el
+   * horizonte sale a 0° y puntúa perfecto, mientras las casas te tapan un Sol
+   * que estará a cuatro grados.
+   *
+   * Lo que veta es lo que hay EN LA LÍNEA DE VISIÓN; la densidad alrededor
+   * solo resta un poco, porque un mirador al borde de un pueblo puede tener
+   * cien casas detrás y las vistas perfectamente libres.
+   * @param {{sight:number, around:number}|null} b null = no se ha podido mirar
+   */
+  function buildingFactor(b) {
+    if (!b) return 0.9;                    // sin comprobar: duda razonable
+    if (b.sight >= 10) return 0.06;        // estás dentro del casco urbano
+    if (b.sight >= 3)  return 0.18;
+    if (b.sight >= 1)  return 0.45;
+    if (b.around >= 40) return 0.75;       // pegado a un pueblo, pero despejado
+    return 1;
+  }
+
   function quality(p) {
     return baseValue(p.total, p.dur, p.obs) * extFactor(p.alt) *
            horizonFactor(p.margin) * skyFactor(p.sky) *
-           roadFactor(p.roads, p.kind) * kindFactor(p.kind);
+           roadFactor(p.roads, p.kind) * kindFactor(p.kind) *
+           buildingFactor(p.buildings);
   }
 
   // ---------------------------------------------------------------------
@@ -103,7 +124,9 @@
    */
   function grid(lat, lon, radiusKm, target) {
     target = target || 320;
-    const step = Math.max(1.5, Math.sqrt(Math.PI * radiusKm * radiusKm / target));
+    // El suelo es bajo a propósito: con una banda de un kilómetro hace falta
+    // un paso de unos 150 m, no de kilómetro y medio.
+    const step = Math.max(0.15, Math.sqrt(Math.PI * radiusKm * radiusKm / target));
     const dLat = step / 111.32;
     const dLon = step / (111.32 * Math.max(0.15, Math.cos(lat * DEG)));
     const n = Math.ceil(radiusKm / step);
@@ -330,37 +353,64 @@
    * Si Overpass no responde, se cae con elegancia a la búsqueda por rejilla,
    * que no depende de nada externo.
    */
-  async function searchSpots(lat, lon, radiusKm, onProgress) {
+  /**
+   * @param {{min:number, max:number}} range banda de distancia, en km
+   *
+   * A pocos kilómetros la totalidad no cambia (un kilómetro son décimas de
+   * segundo), así que dentro de una banda estrecha el orden lo deciden el
+   * relieve, la altitud del sitio y los edificios: justo lo que hace falta
+   * para elegir dónde ponerse cerca de casa.
+   */
+  async function searchSpots(lat, lon, range, onProgress) {
     const rep = (phase, a, b) => { if (onProgress) onProgress(phase, a, b); };
+    const min = range.min || 0, max = range.max;
+    const inBand = km => km >= min && km <= max;
 
-    rep('spots', 0, 1);
-    const raw = await Spots.find(lat, lon, radiusKm);
-    if (!raw || !raw.length) {
-      const g = await search(lat, lon, radiusKm, onProgress);
-      g.fellBack = true;
-      return g;
-    }
-
-    // Dentro del radio de verdad (la caja de Overpass es un rectángulo)
-    const cands = [];
-    for (const s of raw) {
-      const km = Places.distKm(lat, lon, s.lat, s.lon);
-      if (km > radiusKm) continue;
-      const lc = Eclipse.localCircumstances(s.lat, s.lon, s.ele || 0);
-      if (!lc) continue;
-      cands.push(Object.assign({}, s, {
-        km,
+    /** Un punto cualquiera, con sus circunstancias locales resueltas */
+    function candidate(p, extra) {
+      const lc = Eclipse.localCircumstances(p.lat, p.lon, p.ele || 0);
+      if (!lc) return null;
+      return Object.assign({
+        lat: p.lat, lon: p.lon,
+        km: Places.distKm(lat, lon, p.lat, p.lon),
         total: lc.type === 'total',
         dur: lc.totalityDuration,
         alt: lc.max.altRefracted,
         obs: lc.obscuration,
         maxDate: lc.max.date,
         azMax: lc.max.az,
-        margin: null, sky: null, roads: null,
-        q: 0
-      }));
+        margin: null, sky: null, roads: null, buildings: null, q: 0
+      }, extra || {});
     }
-    if (!cands.length) return { results: [], spots: raw.length, from: { lat, lon }, grid: null };
+
+    rep('spots', 0, 1);
+    const raw = await Spots.find(lat, lon, max);
+
+    const cands = [];
+    for (const s of (raw || [])) {
+      const km = Places.distKm(lat, lon, s.lat, s.lon);
+      if (!inBand(km)) continue;
+      const c = candidate(s, { name: s.name, kind: s.kind, ele: s.ele });
+      if (c) cands.push(c);
+    }
+
+    /* En una banda estrecha puede no haber ni un solo sitio catalogado, y con
+       Overpass caído tampoco hay ninguno. Antes que responder «nada», se
+       rellena con puntos de una rejilla fina dentro de la banda: no tendrán
+       nombre, pero se les mira el relieve y los edificios igual, y al menos
+       dicen hacia dónde tirar. */
+    const filled = cands.length < MIN_FINALISTS;
+    if (filled) {
+      for (const p of grid(lat, lon, max, 240).points) {
+        if (!inBand(p.km)) continue;
+        const c = candidate(p);
+        if (c) cands.push(c);
+      }
+    }
+
+    if (!cands.length) {
+      return { results: [], spots: 0, from: { lat, lon }, grid: null, range };
+    }
     for (const p of cands) p.q = quality(p);
 
     // Cuántos finalistas caben en la cuota de elevación que quede
@@ -368,21 +418,28 @@
     const nFinal = Math.max(0, Math.min(N_FINALISTS, Math.floor(Net.spare() / perSpot)));
     if (nFinal < MIN_FINALISTS) throw Net.rateError(Net.waitFor(N_FINALISTS * perSpot));
 
-    // Más juntos que en la rejilla: aquí dos sitios a 3 km pueden ser un
-    // collado y la cima de al lado, y no son en absoluto lo mismo.
-    const finalists = topDiverse(cands, nFinal, 3);
+    // La separación mínima escala con la banda: en un radio de un kilómetro,
+    // exigir tres de distancia dejaría un solo resultado.
+    const finalists = topDiverse(cands, nFinal, Math.max(0.15, max / 8));
 
+    // Carreteras y edificios, en una sola consulta
     rep('roads', 0, 1);
-    const roads = await Spots.checkRoads(finalists);
-    for (let i = 0; i < finalists.length; i++) finalists[i].roads = roads[i];
+    const access = await Spots.checkAccess(finalists);
+    for (let i = 0; i < finalists.length; i++) {
+      if (!access[i]) continue;
+      finalists[i].roads = access[i].roads;
+      finalists[i].buildings = { sight: access[i].sight, around: access[i].around };
+    }
 
     await refine(finalists, onProgress);
 
-    /* Se pidieron sitios a los que llegar en coche, así que los que no tienen
-       carretera se caen de la lista —salvo que quedasen tan pocos que la
+    /* Se pidieron sitios a los que llegar en coche y con las vistas libres,
+       así que los que no tienen carretera, o tienen casas metidas en la línea
+       de visión, se caen de la lista —salvo que quedasen tan pocos que la
        respuesta dejara de ser útil, y entonces se enseñan bien marcados. */
-    const drivable = finalists.filter(p => p.roads !== 0);
-    const shown = drivable.length >= MIN_FINALISTS ? drivable : finalists;
+    const good = finalists.filter(p =>
+      p.roads !== 0 && !(p.buildings && p.buildings.sight >= 3));
+    const shown = good.length >= MIN_FINALISTS ? good : finalists;
     shown.sort((a, b) => b.q - a.q);
 
     const results = shown.slice(0, N_RESULTS).map(p => Object.assign({}, p, {
@@ -392,8 +449,11 @@
     }));
 
     // Rejilla local solo para el mapa de calor: no cuesta red
-    const g = evaluateGrid(lat, lon, radiusKm);
-    return { results, grid: g, from: { lat, lon }, spots: cands.length, landChecked: false };
+    const g = max >= 10 ? evaluateGrid(lat, lon, max) : null;
+    return {
+      results, grid: g, from: { lat, lon }, range,
+      spots: cands.length, filled, fellBack: !raw, landChecked: false
+    };
   }
 
   /** Identificador estable de un punto de la rejilla */
@@ -451,7 +511,8 @@
   global.Planner = {
     search, searchSpots, refine, evaluateGrid, topDiverse, grid, markLand,
     bestNearby, bestNearbyChecked,
-    quality, baseValue, extFactor, horizonFactor, skyFactor, roadFactor, kindFactor,
+    quality, baseValue, extFactor, horizonFactor, skyFactor,
+    roadFactor, kindFactor, buildingFactor,
     N_RESULTS, N_FINALISTS
   };
 })(window);

@@ -143,8 +143,62 @@ resultado, no compensarse con los buenos. De nada sirve la totalidad más larga
 del país si tienes una montaña delante o no puedes llegar.
 
 ```
-calidad = valorEclipse × extinción × horizonte × cielo × acceso × tipo
+calidad = valorEclipse × extinción × horizonte × cielo × acceso × tipo × edificios
 ```
+
+### Bandas de distancia
+
+El selector no ofrece un radio máximo sino cuatro bandas: **< 1 km, 1-2 km,
+2-5 km y 5-25 km**. A esas distancias la duración de la totalidad no cambia
+(un kilómetro son décimas de segundo), así que dentro de una banda el orden lo
+deciden el relieve, la altitud del sitio y los edificios: exactamente lo que
+hace falta para elegir dónde ponerse cerca de casa.
+
+En una banda estrecha puede no haber ni un sitio catalogado. Antes que
+responder «nada», se rellena con puntos de una rejilla fina dentro de la banda:
+sin nombre, pero con su relieve y sus edificios mirados igual.
+
+### Edificios: lo que el modelo de elevación no ve
+
+El primer despliegue recomendó **«Els Quatre Cantons»**, en Montbrió del Camp:
+un **cruce de calles** etiquetado en OSM como `tourism=viewpoint`. El terreno
+allí es llano, el horizonte sale a 0° y puntuaba perfecto — con las casas
+delante. El nº 1 de aquella lista, el Balcó del Mediterrani de Tarragona,
+tenía 49 edificios en la línea de visión: mira al sureste sobre el mar, y el
+eclipse está al oeste-noroeste, detrás de toda la ciudad.
+
+El DEM da la forma del terreno, no lo que hay encima, y `tourism=viewpoint` no
+es garantía de nada. Así que se cuentan los edificios **en la dirección del
+Sol**, que es la única que importa: las casas que tengas a la espalda dan igual.
+
+Con el Sol a 4°, un edificio de altura *h* tapa hasta *h*/tan(4°) ≈ 14·*h*
+metros: ocho metros de casa tapan 115 m, y un bloque de cinco plantas, 215 m.
+Se sondea un círculo de 180 m centrado a 160 m en el azimut del máximo, lo que
+cubre de 0 a 340 m. Aparte, un sondeo de 250 m alrededor detecta que estás
+dentro de un casco urbano.
+
+| Edificios en la línea de visión | Factor |
+|---|---|
+| 0 (y poca edificación alrededor) | 1,00 |
+| 1-2 | 0,45 |
+| 3-9 | 0,18 |
+| 10 o más | 0,06 |
+
+Los sitios con tres o más se caen de la lista, salvo que quedasen tan pocos que
+la respuesta dejara de ser útil.
+
+### Overpass falla de dos maneras
+
+Y hay que tratarlas distinto. **Servidor ocupado** (504, o un 200 con un error
+de texto donde esperabas JSON) se le pasa en segundos: se reintenta una vez.
+**Cuota de la IP agotada** (429) no se arregla reintentando, y deja al usuario
+dos minutos mirando «Buscando miradores…»: se abandona al momento y el
+planificador tira de rejilla.
+
+Carreteras y edificios van en **una sola consulta**. Separadas eran dos
+peticiones seguidas al mismo servidor, y la segunda se llevaba el «servidor
+ocupado» con bastante frecuencia: el usuario veía la mitad de las etiquetas
+en blanco.
 
 Sustituye el aviso de «distancia a la línea central» por «distancia al mejor
 sitio alcanzable», que es la pregunta real.

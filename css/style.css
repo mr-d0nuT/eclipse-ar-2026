@@ -494,8 +494,9 @@ body.tab-plan header.hero, body.tab-sky header.hero { display: none; }
   font-size: 10px; padding: 3px 7px; border-radius: 6px;
   background: rgba(255,255,255,.06); color: var(--txt-faint);
 }
-.pl-tag.ok  { background: rgba(70,227,155,.15); color: var(--ok); }
-.pl-tag.bad { background: rgba(255,95,109,.16); color: #ffbec3; }
+.pl-tag.ok   { background: rgba(70,227,155,.15); color: var(--ok); }
+.pl-tag.warn { background: rgba(255,202,74,.16); color: var(--warn); }
+.pl-tag.bad  { background: rgba(255,95,109,.16); color: #ffbec3; }
 .pl-q { height: 4px; border-radius: 3px; background: rgba(255,255,255,.08); margin-top: 8px; overflow: hidden; }
 .pl-q i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--cyan), var(--corona-hot)); }
 .pl-go {

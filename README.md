@@ -20,7 +20,8 @@ La app se organiza en tres pestañas: **Ahora** (cuánto falta y si lo verás), 
 | ⛰️ **¿Te tapa el terreno?** | Descarga el relieve real en el abanico que recorre el Sol y calcula, con curvatura terrestre y refracción, a qué altura está tu horizonte. Te dice el margen en grados y a qué hora se esconde el Sol tras el monte. Con la silueta del terreno y el recorrido del Sol dibujados encima. |
 | ☁️ **Nubes previstas** | Hora a hora, con la nubosidad **baja** destacada aparte: es la que se sienta justo delante de un Sol tan bajo. Cada dato lleva su fiabilidad, porque a dos semanas vista una previsión no es accionable. |
 | 📊 **Climatología** | Lo que sí sirve hoy: qué hizo el cielo en ese punto los últimos diez 12 de agosto a la misma hora. «5 de cada 9 años estaba despejado.» |
-| 🗺️ **¿Dónde me pongo?** | Busca miradores, collados, cimas y áreas de descanso **reales** a tu alrededor y los ordena por segundos de totalidad, altura del Sol, altitud del sitio, relieve que te tapa, nubes previstas y **si se llega en coche** (carretera a menos de 300 m, comprobada en OpenStreetMap). Con nombre, altitud y enlace para navegar hasta allí. |
+| 🗺️ **¿Dónde me pongo?** | Busca miradores, collados, cimas y áreas de descanso **reales** en la banda que elijas —menos de 1 km, 1-2, 2-5 o 5-25— y los ordena por segundos de totalidad, altura del Sol, altitud del sitio, relieve que te tapa, nubes previstas, **si se llega en coche** (carretera a menos de 300 m) y **si hay edificios entre tú y el Sol**. Con nombre, altitud y enlace para navegar hasta allí. |
+| 🏢 **Cuenta los edificios** | El modelo de elevación no conoce casas ni árboles: una calle de pueblo tiene el horizonte a 0° y puntúa perfecto. Por eso se cuentan aparte los edificios **en la dirección del Sol**, la única que importa. Con el Sol a 4°, un bloque de cinco plantas tapa hasta 215 metros. |
 
 ### Y todo lo de antes
 

@@ -205,16 +205,17 @@
       <div class="pl-radius">
         <span class="muted" data-i18n="pl.radius"></span>
         <div class="seg" id="plRadius">
-          <button data-r="25">25 km</button>
-          <button data-r="50">50 km</button>
-          <button data-r="100" class="on">100 km</button>
-          <button data-r="200">200 km</button>
+          <button data-min="0" data-max="1">&lt; 1 km</button>
+          <button data-min="1" data-max="2">1-2 km</button>
+          <button data-min="2" data-max="5">2-5 km</button>
+          <button data-min="5" data-max="25" class="on">5-25 km</button>
         </div>
       </div>
       <button class="btn-wide" id="btnPlan" data-i18n="pl.search"></button>
       <div class="muted" id="plStatus"></div>
       <div class="pl-list" id="plResults"></div>
-      <div class="muted pl-note" data-i18n="pl.note"></div>
+      <div class="muted pl-note" data-i18n="pl.bldNote"></div>
+      <div class="muted" data-i18n="pl.note"></div>
     </section>
 
     <!-- ── Mapa ── -->

@@ -11,8 +11,8 @@
    Dos consultas separadas a propósito:
      1. Los sitios de una zona. Tarda unos segundos, así que se guarda un mes
         (un mirador no se mueve).
-     2. Si hay carretera a 300 m de cada finalista. Una sola consulta con un
-        `out count` por punto: medio segundo para una docena.
+     2. Carreteras y edificios de los finalistas, con un `out count` por
+        conjunto: medio segundo para una docena de sitios.
 
    Filtrar por carretera dentro de la consulta grande también funciona, pero
    obliga al servidor a materializar todos los nodos de todas las vías de la
@@ -31,8 +31,46 @@
   const ROAD_M = 300;                        // metros hasta la carretera
   const MAX_SPAN = 2.2;                      // grados de lado máximo de la caja
 
-  function ask(query, timeoutMs) {
-    return Net.getJSON(API + '?data=' + encodeURIComponent(query), timeoutMs || 50000, 1);
+  /* Edificios: lo que el modelo de elevación no ve.
+
+     El DEM da la forma del terreno, no lo que hay encima. Una calle de pueblo
+     tiene el horizonte del terreno a 0° y puntúa perfecto, mientras las casas
+     tapan un Sol que estará a 4°. Y la etiqueta `tourism=viewpoint` de OSM no
+     salva de eso: «Els Quatre Cantons», en Montbrió del Camp, es un cruce de
+     calles etiquetado como mirador.
+
+     Con el Sol a 4°, un edificio de altura h tapa hasta h/tan(4°) ≈ 14·h
+     metros: ocho metros de casa tapan 115 m, y un bloque de cinco plantas,
+     215 m. Por eso se sondea hasta unos 340 m EN LA DIRECCIÓN DEL SOL, que es
+     la única que importa: las casas que tengas a la espalda dan igual. */
+  const SIGHT_OFFSET = 160;                  // metros hacia el Sol
+  const SIGHT_R = 180;                       // radio del sondeo -> cubre 0-340 m
+  const DENSITY_R = 250;                     // para detectar casco urbano
+
+  /* Overpass es un servicio comunitario gratuito y se le nota. Falla de dos
+     maneras distintas y hay que tratarlas distinto:
+
+       · Servidor ocupado. Llega como 504, o como un 200 con un error de texto
+         donde esperabas JSON. Se le pasa en segundos: se reintenta una vez.
+       · Cuota de la IP agotada (429). Reintentar no sirve de nada, y encima
+         deja al usuario dos minutos mirando «Buscando miradores…». Se abandona
+         al momento y el planificador tira de rejilla.
+
+     El tiempo límite es corto por lo mismo: más vale una respuesta peor que
+     una espera eterna. */
+  async function ask(query, timeoutMs) {
+    const url = API + '?data=' + encodeURIComponent(query);
+    let last = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt) await new Promise(r => setTimeout(r, 2500));
+      try {
+        return await Net.getJSON(url, timeoutMs || 30000, 0);
+      } catch (e) {
+        last = e;
+        if (e && e.status === 429) break;
+      }
+    }
+    throw last;
   }
 
   /** Qué clase de sitio es, según sus etiquetas */
@@ -59,8 +97,11 @@
     /* Recorte a la franja, pero solo con el tramo que cae CERCA. La banda va
        del Ártico a Baleares: su caja global no recorta nada. Y sin recortar,
        Overpass devuelve los primeros 900 nodos que encuentra —que en Cataluña
-       son todos del Pirineo— y la banda, que queda al suroeste, se pierde. */
-    try {
+       son todos del Pirineo— y la banda, que queda al suroeste, se pierde.
+
+       Por debajo de 30 km no hace falta: la caja ya es pequeña, y recortarla
+       podría dejarla vacía si el usuario está fuera de la franja. */
+    if (radiusKm > 30) try {
       const lim = Eclipse.totalityLimits(6);
       const near = lim.north.concat(lim.south)
         .filter(p => Places.distKm(lat, lon, p.lat, p.lon) <= radiusKm + 40);
@@ -123,27 +164,42 @@
   }
 
   /**
-   * ¿Hay carretera cerca de cada uno de estos puntos?
-   * Una sola consulta: un conjunto `around` por punto y un `out count` por
-   * conjunto, que salen en el mismo orden.
-   * @returns {Promise<Array<number|null>>} vías encontradas, o null si no se sabe
+   * Todo lo que hay que saber de cada finalista, en UNA sola consulta:
+   * si hay carretera cerca, cuántos edificios se interponen hacia el Sol y
+   * cuánta edificación tiene alrededor.
+   *
+   * Van juntas a propósito. Separadas eran dos peticiones seguidas al mismo
+   * servidor, y la segunda se llevaba el «servidor ocupado» con bastante
+   * frecuencia: el usuario veía la mitad de las etiquetas en blanco.
+   *
+   * Overpass devuelve un `out count` por conjunto y en el mismo orden en que
+   * se declaran, que es lo que permite atribuir cada cuenta a su punto.
+   *
+   * @returns {Promise<Array<{roads:number, sight:number, around:number}|null>>}
    */
-  async function checkRoads(points) {
+  async function checkAccess(points) {
     if (!points.length) return [];
-    const key = 'roads:' + points.map(p => p.lat.toFixed(4) + ',' + p.lon.toFixed(4)).join(';');
+    const key = 'access:' + points.map(p =>
+      p.lat.toFixed(4) + ',' + p.lon.toFixed(4) + ',' + Math.round(p.azMax || 286)).join(';');
 
-    const lines = ['[out:json][timeout:40];'];
+    const lines = ['[out:json][timeout:60];'];
     points.forEach((p, i) => {
-      lines.push(`way(around:${ROAD_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)})["highway"~"${DRIVABLE}"]->.a${i};`);
+      const d = Horizon.destPoint(p.lat, p.lon, p.azMax || 286, SIGHT_OFFSET);
+      lines.push(`way(around:${ROAD_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)})["highway"~"${DRIVABLE}"]->.r${i};`);
+      lines.push(`way(around:${SIGHT_R},${d.lat.toFixed(5)},${d.lon.toFixed(5)})["building"]->.b${i};`);
+      lines.push(`way(around:${DENSITY_R},${p.lat.toFixed(5)},${p.lon.toFixed(5)})["building"]->.v${i};`);
     });
-    points.forEach((p, i) => lines.push(`.a${i} out count;`));
+    points.forEach((p, i) => {
+      lines.push(`.r${i} out count;`); lines.push(`.b${i} out count;`); lines.push(`.v${i} out count;`);
+    });
 
     try {
       const res = await Net.cached(key, SPOTS_TTL, async () => {
-        const j = await ask(lines.join('\n'), 40000);
-        const counts = (j.elements || []).filter(e => e.type === 'count');
-        if (counts.length !== points.length) throw new Error('cuentas incompletas');
-        return counts.map(c => parseInt(c.tags.ways, 10) || 0);
+        const j = await ask(lines.join('\n'), 60000);
+        const c = (j.elements || []).filter(e => e.type === 'count');
+        if (c.length !== points.length * 3) throw new Error('cuentas incompletas');
+        const n = i => parseInt(c[i].tags.ways, 10) || 0;
+        return points.map((p, i) => ({ roads: n(3 * i), sight: n(3 * i + 1), around: n(3 * i + 2) }));
       });
       return res.value;
     } catch (e) {
@@ -151,5 +207,5 @@
     }
   }
 
-  global.Spots = { find, checkRoads, kindOf, boundingBox, ROAD_M };
+  global.Spots = { find, checkAccess, kindOf, boundingBox, ROAD_M, SIGHT_OFFSET, SIGHT_R };
 })(window);

@@ -15,7 +15,7 @@
   // Datos descargados para la ubicación actual
   let data = { key: null, horizon: null, analysis: null, weather: null, summary: null, clima: null };
   let busy = { verdict: false, horizon: false, weather: false, clima: false, plan: false };
-  let planState = { radius: 100, results: null, heatLayer: null };
+  let planState = { range: { min: 5, max: 25 }, rangeLabel: '5-25 km', results: null, heatLayer: null };
 
   const locKey = s => s.lat.toFixed(3) + ',' + s.lon.toFixed(3);
   const num = (v, d) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d == null ? 1 : d);
@@ -492,25 +492,34 @@
     list.innerHTML = res.results.map((p, i) => {
       // El titular es el sitio, cuando lo hay; la totalidad va justo debajo,
       // porque «Coll de la Creu» dice mucho más que «41.48, 1.52».
+      // La altitud etiquetada en OSM si la hay; si no, la que devolvió el
+      // modelo de elevación al calcularle el horizonte.
+      const ele = p.ele != null ? p.ele : (p.elev != null ? Math.round(p.elev) : null);
+      const eleTag = ele != null ? ` <span class="pl-ele">${ele} m</span>` : '';
       const title = p.kind
-        ? (p.name || T('pl.kind.' + p.kind)) +
-          (p.ele != null ? ` <span class="pl-ele">${p.ele} m</span>` : '')
-        : (p.total ? T('pl.dur', { dur: F.fmtDur(p.dur) })
-                   : T('pl.noTotality', { pct: (p.obs * 100).toFixed(1) }));
+        ? (p.name || T('pl.kind.' + p.kind)) + eleTag
+        : T('pl.spotHere') + eleTag;
 
       const bits = [];
-      if (p.kind) {
-        bits.push(p.total ? T('pl.dur', { dur: F.fmtDur(p.dur) })
-                          : T('pl.noTotality', { pct: (p.obs * 100).toFixed(1) }));
-      }
+      bits.push(p.total ? T('pl.dur', { dur: F.fmtDur(p.dur) })
+                        : T('pl.noTotality', { pct: (p.obs * 100).toFixed(1) }));
       bits.push(T('pl.where', { km: Math.round(p.fromKm), dir: I18N.cardinal(p.fromBearing) }));
       bits.push(T('pl.nearPlace', { km: Math.round(p.near.km), place: p.near.place.n }));
 
       const tags = [];
-      if (p.kind) {
-        tags.push(`<span class="pl-tag">${T('pl.kind.' + p.kind)}</span>`);
-        if (p.roads > 0) tags.push(`<span class="pl-tag ok">${T('pl.road')}</span>`);
-        else if (p.roads === 0) tags.push(`<span class="pl-tag bad">${T('pl.roadNo')}</span>`);
+      if (p.kind) tags.push(`<span class="pl-tag">${T('pl.kind.' + p.kind)}</span>`);
+      if (p.roads > 0) tags.push(`<span class="pl-tag ok">${T('pl.road')}</span>`);
+      else if (p.roads === 0) tags.push(`<span class="pl-tag bad">${T('pl.roadNo')}</span>`);
+
+      // Lo que el modelo de elevación no ve, y que mandó a una calle de pueblo
+      if (p.buildings) {
+        if (p.buildings.sight >= 3) tags.push(`<span class="pl-tag bad">${T('pl.bldBlocked', { n: p.buildings.sight })}</span>`);
+        else if (p.buildings.sight >= 1) tags.push(`<span class="pl-tag warn">${T('pl.bldSome', { n: p.buildings.sight })}</span>`);
+        else if (p.buildings.around >= 40) tags.push(`<span class="pl-tag warn">${T('pl.bldTown')}</span>`);
+        else tags.push(`<span class="pl-tag ok">${T('pl.bldClear')}</span>`);
+      } else if (p.roads == null) {
+        // OpenStreetMap no contestó: mejor decirlo que dejar creer que está mirado
+        tags.push(`<span class="pl-tag warn">${T('pl.accessUnknown')}</span>`);
       }
 
       if (p.margin == null) tags.push(`<span class="pl-tag">${T('pl.hzUnknown')}</span>`);
@@ -562,15 +571,16 @@
     if (btn) { btn.textContent = T('pl.searching'); btn.disabled = true; }
 
     try {
-      const res = await Planner.searchSpots(st.lat, st.lon, planState.radius, (phase, a, b) => {
+      const res = await Planner.searchSpots(st.lat, st.lon, planState.range, (phase, a, b) => {
         if (status) status.textContent = T('pl.phase.' + phase) + (b > 1 ? ` (${a}/${b})` : '');
       });
       planState.results = res;
       if (status) {
         const lines = [];
-        if (!res.results.length) lines.push(T('pl.none', { radius: planState.radius }));
+        if (!res.results.length) lines.push(T('pl.none', { range: planState.rangeLabel }));
         else if (res.fellBack) lines.push(T('pl.doneGrid', { n: res.results.length }));
         else lines.push(T('pl.doneSpots', { n: res.results.length, seen: res.spots }));
+        if (res.results.length && res.filled) lines.push(T('pl.filled'));
         status.innerHTML = lines.join('<br>');
       }
       renderPlan();
@@ -677,9 +687,10 @@
   const seg = $('plRadius');
   if (seg) {
     seg.addEventListener('click', e => {
-      const b = e.target.closest('button[data-r]');
+      const b = e.target.closest('button[data-max]');
       if (!b) return;
-      planState.radius = +b.dataset.r;
+      planState.range = { min: +b.dataset.min, max: +b.dataset.max };
+      planState.rangeLabel = b.textContent.trim();
       seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
     });
   }
