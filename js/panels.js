@@ -68,6 +68,7 @@
       const m = App() && App().state.map;
       if (m) setTimeout(() => m.invalidateSize(), 60);
       if (App()) refreshNearby();
+      if (global.Detail) Detail.shown();
     }
     if (name === 'now' && App()) showOfficial();
     if (name === 'now' && data.analysis) drawHorizonChart();
@@ -274,6 +275,7 @@
     data.analysis = Horizon.analyse(prof, st.lc, st.lat, st.lon);
     renderHorizon();
     renderVerdict();
+    if (global.Detail) Detail.drawChart();      // el mismo perfil, otra vista
   }
 
   // =====================================================================
@@ -729,6 +731,7 @@
     refreshNearby();
     /* La lista, ya. Es local y no puede depender de que haya red. */
     showOfficial();
+    if (global.Detail) Detail.refresh();
 
     /* El resto en cadena, no a la vez: el veredicto gasta unas 170 unidades de
        cuota y las nubes de los 18 puntos otras 54. Lanzados en paralelo se

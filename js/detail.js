@@ -1,0 +1,378 @@
+/* =========================================================================
+   detail.js — Detalle del punto, al estilo del visualizador del IGN
+
+   Replica la vista del visualizador oficial
+   (https://visualizadores.ign.es/eclipses/2026): ortofoto, el punto con un
+   círculo que marca hacia dónde estará el Sol y con cuántos grados de azimut,
+   y al lado todas las circunstancias, incluido el perfil de visibilidad.
+
+   Dos diferencias con el original, ambas a favor:
+     · La ortofoto es la del PNOA del propio IGN, así que es la misma imagen.
+     · El perfil de visibilidad se calcula con el modelo de elevaciones
+       Copernicus y sale de datos que la app ya tiene cacheados.
+
+   El punto es SIEMPRE la ubicación de la app: tocar el mapa la cambia, y con
+   ella se actualiza todo lo demás. Así no hay dos «posiciones» que puedan
+   contradecirse.
+   ========================================================================= */
+(function (global) {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const T = (k, p) => I18N.t(k, p);
+  const App = () => global.EclipseApp;
+
+  const R_EF = 6371000 / (1 - 0.13);     // radio terrestre efectivo con refracción
+
+  /* El círculo NO tiene un radio fijo: crece al alejar el zoom para ocupar
+     siempre la misma parte de la pantalla. Un círculo de 150 m es perfecto
+     para ver qué tienes en el jardín, pero al alejarte se convierte en un
+     punto y ya no dice nada. Escalándolo, la línea hacia el Sol llega hasta
+     donde llegue el mapa, y de un vistazo ves si hay una sierra a veinte
+     kilómetros justo en esa dirección. */
+  const CIRCLE_FRAC = 0.40;              // fracción del ancho visible del mapa
+  const CIRCLE_MIN = 60;                 // metros
+
+  function circleRadius() {
+    if (!map) return CIRCLE_MIN;
+    const b = map.getBounds();
+    const w = map.distance(b.getNorthWest(), b.getNorthEast());
+    return Math.max(CIRCLE_MIN, w * CIRCLE_FRAC);
+  }
+
+  /** 8400 -> «8,4 km» · 150 -> «150 m» */
+  function distLabel(m) {
+    return m >= 1000 ? (m / 1000).toFixed(m < 10000 ? 1 : 0) + ' km' : Math.round(m) + ' m';
+  }
+
+  let map = null, layers = {};
+  let placeCache = {};
+
+  // ---------------------------------------------------------------------
+  // Formato
+  // ---------------------------------------------------------------------
+  /** 41.132278 -> 41°7'56.2"N */
+  function dms(v, pos, neg) {
+    const hemi = v < 0 ? neg : pos;
+    v = Math.abs(v);
+    const d = Math.floor(v);
+    const m = Math.floor((v - d) * 60);
+    const s = ((v - d) * 60 - m) * 60;
+    return `${d}°${m}'${s.toFixed(1)}"${hemi}`;
+  }
+
+  /** 4926 -> «1h 22min 6s», como lo escribe el IGN */
+  function dur(sec) {
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return `${h}h ${m}min ${s}s`;
+  }
+
+  // ---------------------------------------------------------------------
+  // Mapa
+  // ---------------------------------------------------------------------
+  function ensureMap() {
+    if (map || typeof L === 'undefined' || !$('dtMap')) return map;
+    const st = App().state;
+    map = L.map('dtMap', { zoomControl: true, attributionControl: false })
+      .setView([st.lat, st.lon], 16);
+
+    /* Ortofoto del PNOA: la misma imagen que usa el visualizador oficial.
+       Fuera de España no hay cobertura, así que debajo va el mapa oscuro que
+       ya usa el resto de la app y que sí es mundial. */
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, subdomains: 'abcd'
+    }).addTo(map);
+    L.tileLayer('https://www.ign.es/wmts/pnoa-ma?service=WMTS&request=GetTile&version=1.0.0' +
+                '&layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible' +
+                '&format=image/jpeg&tilematrix={z}&tilerow={y}&tilecol={x}', {
+      maxZoom: 19, opacity: 1
+    }).addTo(map);
+
+    map.on('click', e => {
+      App().setLocation(e.latlng.lat, e.latlng.lng, 0, T('dt.mapPoint'));
+    });
+    // Al alejar o acercar, el círculo se reescala para seguir siendo útil
+    map.on('zoomend', () => drawMarkers(false));
+    return map;
+  }
+
+  /**
+   * El punto, el círculo y hacia dónde estará el Sol.
+   * El círculo no es decoración: al ponerle el Sol encima en su azimut real,
+   * de un vistazo sabes qué tienes delante en esa dirección —una casa, un
+   * monte, el mar— sin tener que interpretar un número de grados.
+   */
+  function drawMarkers(recenter) {
+    const st = App().state;
+    if (!map || !st.lc) return;
+    const CIRCLE_M = circleRadius();
+
+    for (const k in layers) { if (layers[k]) map.removeLayer(layers[k]); }
+    layers = {};
+
+    const az = st.lc.max.az, alt = st.lc.max.altRefracted;
+    const here = [st.lat, st.lon];
+
+    layers.circle = L.circle(here, {
+      radius: CIRCLE_M, color: '#fff', weight: 2, opacity: .85,
+      fill: false, interactive: false
+    }).addTo(map);
+
+    // Marca del Norte, para leer el círculo como una rosa de los vientos
+    const n = Horizon.destPoint(st.lat, st.lon, 0, CIRCLE_M);
+    layers.north = L.marker([n.lat, n.lon], {
+      interactive: false,
+      icon: L.divIcon({ className: '', iconSize: [16, 16], html:
+        '<div style="transform:translate(-50%,-50%);color:#fff;font:700 11px -apple-system,sans-serif;' +
+        'text-shadow:0 0 4px #000">N</div>' })
+    }).addTo(map);
+
+    // Línea hacia el Sol y el Sol sobre la circunferencia
+    const s = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M);
+    layers.ray = L.polyline([here, [s.lat, s.lon]], {
+      color: '#fff', weight: 2, opacity: .9, interactive: false
+    }).addTo(map);
+
+    layers.sun = L.marker([s.lat, s.lon], {
+      interactive: false,
+      icon: L.divIcon({ className: '', iconSize: [26, 26], html:
+        '<div style="transform:translate(-50%,-50%);font-size:20px;line-height:1;' +
+        'filter:drop-shadow(0 0 6px rgba(0,0,0,.9))">☀️</div>' })
+    }).addTo(map);
+
+    // La etiqueta de grados, a media línea, como en el visualizador oficial
+    const mid = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M * 0.62);
+    layers.label = L.marker([mid.lat, mid.lon], {
+      interactive: false,
+      icon: L.divIcon({ className: '', iconSize: [80, 18], html:
+        `<div style="transform:translate(-50%,-140%);white-space:nowrap;color:#fff;` +
+        `font:600 11px -apple-system,sans-serif;text-shadow:0 0 5px #000,0 0 3px #000">` +
+        `${az.toFixed(2)}° · ${distLabel(CIRCLE_M)}</div>` })
+    }).addTo(map);
+
+    layers.me = L.marker(here, {
+      interactive: false,
+      icon: L.divIcon({ className: '', iconSize: [22, 22], html:
+        '<div style="transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;' +
+        'background:#4fd6ff;border:3px solid #fff;box-shadow:0 0 8px rgba(0,0,0,.8)"></div>' })
+    }).addTo(map);
+
+    /* Solo se recentra cuando cambia la ubicación, y SIN tocar el zoom. Antes
+       forzaba un mínimo de 15 y eso echaba a perder justo lo que se busca al
+       alejarse: si te vas a 20 km para ver si hay una sierra en medio, el
+       mapa no puede devolverte al jardín en el siguiente refresco. */
+    if (recenter) map.panTo(here, { animate: false });
+
+    const badge = $('dtAz');
+    if (badge) badge.textContent = `${az.toFixed(2)}° · ${alt.toFixed(2)}° · ${distLabel(CIRCLE_M)}`;
+  }
+
+  // ---------------------------------------------------------------------
+  // Panel de datos
+  // ---------------------------------------------------------------------
+  function render() {
+    const panel = $('dtPanel');
+    const st = App() && App().state;
+    if (!panel || !st) return;
+    const F = App(), lc = st.lc;
+
+    if (!lc) {
+      panel.innerHTML = `<div class="muted">${T('alert.notVisible', { place: st.label })}</div>`;
+      return;
+    }
+
+    const isTotal = lc.type === 'total' && !!lc.c2;
+    const set = Astro.sunRiseSet(lc.max.date, st.lat, st.lon).set;
+    // El IGN mide la duración hasta el ocaso cuando el Sol se pone antes de C4,
+    // que en el este peninsular es lo que pasa siempre.
+    const endVisible = (set && set < lc.c4.date) ? set : lc.c4.date;
+
+    const place = placeCache[key(st)];
+    const rows = [
+      [T('dt.type'), isTotal ? T('dt.typeTotal') : T('dt.typePartial'), 'strong'],
+      [T('dt.c1'), F.fmtTime(lc.c1.date)],
+      [T('dt.c2'), lc.c2 ? F.fmtTime(lc.c2.date) : '—'],
+      [T('dt.max'), F.fmtTime(lc.max.date), 'strong'],
+      [T('dt.c3'), lc.c3 ? F.fmtTime(lc.c3.date) : '—'],
+      [T('dt.sunset'), set ? F.fmtTime(set) : '—'],
+      [T('dt.duration'), dur((endVisible - lc.c1.date) / 1000)],
+      [T('dt.durTotal'), dur(lc.totalityDuration)],
+      [T('dt.sunAlt'), lc.max.altRefracted.toFixed(4) + '°'],
+      [T('dt.sunAz'), lc.max.az.toFixed(4) + '°']
+    ];
+
+    const pct = (lc.obscuration * 100);
+    panel.innerHTML =
+      `<div class="dt-loc">
+         <div class="dt-coords">${dms(st.lat, 'N', 'S')}, ${dms(st.lon, 'E', 'O')}</div>
+         <div class="dt-place">${place ? place : T('dt.locating')}</div>
+       </div>
+       <div class="dt-bar"><i style="width:${Math.min(100, pct).toFixed(2)}%"></i>
+         <b>${pct.toFixed(2)} %</b></div>
+       <div class="dt-rows">` +
+      rows.map(r => `<div class="dt-row"><span>${r[0]}</span>` +
+        `<b class="${r[2] || ''}">${r[1]}</b></div>`).join('') +
+      `</div>`;
+  }
+
+  const key = s => s.lat.toFixed(4) + ',' + s.lon.toFixed(4);
+
+  /** Municipio y provincia, con el geocodificador inverso del IGN */
+  async function loadPlace() {
+    const st = App().state;
+    const k = key(st);
+    if (placeCache[k] !== undefined) { render(); return; }
+    placeCache[k] = null;
+    const p = await Geocode.reverse(st.lat, st.lon);
+    placeCache[k] = p ? [p.muni, p.province && p.province !== p.muni ? '(' + p.province + ')' : '',
+                        p.comunidadAutonoma].filter(Boolean).join(' ') : '';
+    render();
+  }
+
+  // ---------------------------------------------------------------------
+  // Perfil de visibilidad
+  // ---------------------------------------------------------------------
+  /* El corte del terreno en la dirección del Sol, con la línea de visibilidad
+     encima. Es el mismo gráfico del visualizador del IGN y responde a la
+     pregunta de golpe: si el rojo cruza la línea de puntos, no lo ves.
+
+     La línea de visibilidad sube tan(altura) por metro, más la corrección por
+     curvatura terrestre: a 20 km el suelo ya se ha ido 27 m por debajo. */
+  const MAX_D = 20000;
+
+  function sightAt(d, obsElev, altDeg) {
+    return obsElev + d * Math.tan(altDeg * Math.PI / 180) + (d * d) / (2 * R_EF);
+  }
+
+  function drawChart() {
+    const cv = $('dtChart');
+    const st = App() && App().state;
+    if (!cv || !st || !st.lc) return;
+
+    const prof = Horizon.cachedProfile(st.lat, st.lon);
+    const verdict = $('dtVerdict');
+
+    if (!prof) {
+      cv.style.display = 'none';
+      if (verdict) verdict.innerHTML = `<span class="dt-v-wait">${T('dt.visWait')}</span>`;
+      return;
+    }
+    cv.style.display = '';
+
+    // El rayo más cercano al azimut del máximo
+    const az = st.lc.max.az, alt = st.lc.max.altRefracted;
+    let ray = prof.rays[0];
+    for (const r of prof.rays) if (Math.abs(r.az - az) < Math.abs(ray.az - az)) ray = r;
+
+    const pts = ray.samples.filter(s => s[0] <= MAX_D);
+    const obs = prof.obsElev;
+
+    // ¿Cruza el terreno la línea de visibilidad?
+    let blocked = null;
+    for (const [d, h] of pts) {
+      if (h > sightAt(d, obs, alt)) { blocked = { d, h }; break; }
+    }
+
+    const cssW = cv.clientWidth || 320;
+    const H = Math.round(Math.min(220, Math.max(150, cssW * 0.5)));
+    const dpr = Math.min(devicePixelRatio || 1, 2.5);
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(H * dpr);
+    cv.style.height = H + 'px';
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, cssW, H);
+
+    const padL = 44, padR = 10, padT = 10, padB = 30;
+    const pw = cssW - padL - padR, ph = H - padT - padB;
+
+    const topSight = sightAt(MAX_D, obs, alt);
+    let yMax = Math.max(topSight, ...pts.map(p => p[1])) * 1.08;
+    yMax = Math.ceil(yMax / 250) * 250 || 500;
+    const yMin = Math.min(0, obs, ...pts.map(p => p[1]));
+
+    const X = d => padL + (d / MAX_D) * pw;
+    const Y = h => padT + (1 - (h - yMin) / (yMax - yMin)) * ph;
+
+    // Rejilla
+    g.font = '600 9.5px -apple-system, sans-serif';
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (let i = 0; i <= 3; i++) {
+      const h = yMin + (yMax - yMin) * i / 3, y = Y(h);
+      g.strokeStyle = 'rgba(255,255,255,.08)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(padL, y); g.lineTo(cssW - padR, y); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,.45)';
+      g.fillText(Math.round(h) + '', padL - 6, y);
+    }
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (let d = 0; d <= MAX_D; d += 5000) {
+      g.fillStyle = 'rgba(255,255,255,.45)';
+      g.fillText((d / 1000) + 'k', X(d), padT + ph + 6);
+    }
+    g.save();
+    g.translate(11, padT + ph / 2); g.rotate(-Math.PI / 2);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = 'rgba(255,255,255,.4)';
+    g.fillText(T('dt.axisAlt'), 0, 0);
+    g.restore();
+
+    // Línea de visibilidad
+    g.strokeStyle = '#ffab3d'; g.lineWidth = 1.8; g.setLineDash([5, 4]);
+    g.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const d = MAX_D * i / 40, x = X(d), y = Y(sightAt(d, obs, alt));
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.stroke(); g.setLineDash([]);
+
+    // Terreno
+    g.beginPath();
+    g.moveTo(X(0), Y(obs));
+    for (const [d, h] of pts) g.lineTo(X(d), Y(h));
+    g.lineTo(X(pts.length ? pts[pts.length - 1][0] : MAX_D), Y(yMin));
+    g.lineTo(X(0), Y(yMin)); g.closePath();
+    g.fillStyle = 'rgba(255,95,109,.16)'; g.fill();
+    g.strokeStyle = '#ff5f6d'; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(X(0), Y(obs));
+    for (const [d, h] of pts) g.lineTo(X(d), Y(h));
+    g.stroke();
+
+    // Observador y Sol
+    g.fillStyle = '#4fd6ff';
+    g.beginPath(); g.arc(X(0), Y(obs), 4.5, 0, 7); g.fill();
+    g.fillStyle = '#ffab3d';
+    g.beginPath(); g.arc(X(MAX_D), Y(topSight), 4.5, 0, 7); g.fill();
+
+    if (blocked) {
+      g.strokeStyle = '#ff5f6d'; g.lineWidth = 2;
+      g.beginPath(); g.arc(X(blocked.d), Y(blocked.h), 7, 0, 7); g.stroke();
+    }
+
+    if (verdict) {
+      verdict.innerHTML = blocked
+        ? `<span class="dt-v-bad">${T('dt.visNo', { km: (blocked.d / 1000).toFixed(1) })}</span>`
+        : `<span class="dt-v-ok">${T('dt.visYes')}</span>`;
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // API
+  // ---------------------------------------------------------------------
+  function refresh() {
+    if (!App() || !$('dtPanel')) return;
+    render();
+    ensureMap();
+    drawMarkers(true);
+    drawChart();
+    loadPlace();
+  }
+
+  function shown() {
+    if (map) setTimeout(() => { map.invalidateSize(); drawMarkers(true); }, 60);
+    drawChart();
+  }
+
+  addEventListener('resize', () => drawChart());
+
+  global.Detail = { refresh, shown, drawChart, dms, dur };
+})(window);

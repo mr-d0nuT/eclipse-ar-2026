@@ -63,5 +63,23 @@
     } catch (e) { return null; }
   }
 
-  global.Geocode = { suggest, resolve };
+  /**
+   * Al revés: de coordenadas a municipio. Para poder decir «Tarragona
+   * (Tarragona), Catalunya» debajo de unas coordenadas, como hace el
+   * visualizador del IGN.
+   * Se cachea sin caducidad: los municipios no se mueven.
+   */
+  async function reverse(lat, lon) {
+    const key = `rgeo:${lat.toFixed(4)},${lon.toFixed(4)}`;
+    try {
+      const res = await Net.cached(key, null, async () => {
+        const j = await ask(`reverseGeocode?lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}`, 9000);
+        if (!j || !j.muni) throw new Error('sin municipio');
+        return { muni: j.muni, province: j.province || '', comunidadAutonoma: j.comunidadAutonoma || '' };
+      });
+      return res.value;
+    } catch (e) { return null; }
+  }
+
+  global.Geocode = { suggest, resolve, reverse };
 })(window);

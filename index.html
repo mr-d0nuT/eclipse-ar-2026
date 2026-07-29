@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 
@@ -209,6 +209,28 @@
        ═════════════════════════════════════════════════════════════════ -->
   <div class="pane" id="pane-plan" role="tabpanel">
 
+    <!-- ── Detall del punt (a l'estil del visualitzador de l'IGN) ── -->
+    <section class="card" id="detailCard">
+      <h2><span class="dot"></span><span data-i18n="dt.title"></span></h2>
+      <div class="muted" data-i18n="dt.intro"></div>
+      <div class="dt-maprow">
+        <div id="dtMap"></div>
+        <span class="dt-azbadge" id="dtAz"></span>
+      </div>
+      <div class="dt-panel" id="dtPanel"></div>
+      <div class="dt-vis">
+        <div class="dt-h" data-i18n="dt.visProfile"></div>
+        <div class="dt-verdict" id="dtVerdict"></div>
+        <canvas id="dtChart"></canvas>
+        <div class="hz-legend">
+          <span><i class="sw-ter"></i><span data-i18n="dt.legTerrain"></span></span>
+          <span><i class="sw-obs"></i><span data-i18n="dt.legObs"></span></span>
+          <span><i class="sw-los"></i><span data-i18n="dt.legLos"></span></span>
+        </div>
+        <div class="muted" data-i18n="dt.visNote"></div>
+      </div>
+    </section>
+
     <!-- ── Mapa ── -->
     <section class="card">
       <h2><span class="dot"></span><span data-i18n="card.band"></span></h2>
@@ -361,21 +383,22 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/i18n.js?v=14"></script>
-<script src="js/i18n2.js?v=14"></script>
-<script src="js/netcache.js?v=14"></script>
-<script src="js/places.js?v=14"></script>
-<script src="js/official.js?v=14"></script>
-<script src="js/geocode.js?v=14"></script>
-<script src="js/spots.js?v=14"></script>
-<script src="js/voice.js?v=14"></script>
-<script src="js/astro.js?v=14"></script>
-<script src="js/eclipse.js?v=14"></script>
-<script src="js/horizon.js?v=14"></script>
-<script src="js/weather.js?v=14"></script>
-<script src="js/planner.js?v=14"></script>
-<script src="js/ar.js?v=14"></script>
-<script src="js/app.js?v=14"></script>
-<script src="js/panels.js?v=14"></script>
+<script src="js/i18n.js?v=15"></script>
+<script src="js/i18n2.js?v=15"></script>
+<script src="js/netcache.js?v=15"></script>
+<script src="js/places.js?v=15"></script>
+<script src="js/official.js?v=15"></script>
+<script src="js/geocode.js?v=15"></script>
+<script src="js/detail.js?v=15"></script>
+<script src="js/spots.js?v=15"></script>
+<script src="js/voice.js?v=15"></script>
+<script src="js/astro.js?v=15"></script>
+<script src="js/eclipse.js?v=15"></script>
+<script src="js/horizon.js?v=15"></script>
+<script src="js/weather.js?v=15"></script>
+<script src="js/planner.js?v=15"></script>
+<script src="js/ar.js?v=15"></script>
+<script src="js/app.js?v=15"></script>
+<script src="js/panels.js?v=15"></script>
 </body>
 </html>
