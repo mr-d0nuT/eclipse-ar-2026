@@ -600,3 +600,17 @@ footer { text-align: center; padding: 26px 0 0; }
 .find-item + .find-item { border-top: 1px solid rgba(255,255,255,.06); }
 .find-item:hover, .find-item:focus { background: rgba(255,210,125,.10); }
 .find-item small { display: block; color: var(--txt-faint); font-size: 11px; margin-top: 2px; }
+
+/* ---------- Puntos plegados ---------- */
+.pl-rest { display: none; flex-direction: column; gap: 8px; }
+.pl-rest.on { display: flex; animation: paneIn .2s ease-out; }
+.pl-toggle {
+  width: 100%; margin-top: 2px; border: 1px dashed var(--panel-brd-hi);
+  background: rgba(255,255,255,.035); color: var(--txt-dim);
+  border-radius: var(--r-sm); padding: 11px 14px; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: .16s;
+}
+.pl-toggle:hover { color: var(--txt); border-color: var(--corona); background: rgba(255,210,125,.07); }
+.pl-caret { font-size: 9px; opacity: .7; }

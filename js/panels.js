@@ -17,7 +17,7 @@
   let busy = { verdict: false, horizon: false, weather: false, clima: false, plan: false };
   // Una sola búsqueda, de 0 a 25 km, partida en «al lado» y «más lejos»
   const RANGE = { min: 0, max: 25, nearKm: 1 };
-  let planState = { results: null, heatLayer: null, doneFor: null };
+  let planState = { results: null, heatLayer: null, doneFor: null, expanded: false };
 
   /* Reintento automático. Cuando la API gratuita corta por cuota, la espera es
      de un minuto: pedirle al usuario que vuelva a darle a un botón que ya no
@@ -69,7 +69,7 @@
       if (m) setTimeout(() => m.invalidateSize(), 60);
       if (App()) refreshNearby();
     }
-    if (name === 'now' && App()) autoPlan();
+    if (name === 'now' && App()) showOfficial();
     if (name === 'now' && data.analysis) drawHorizonChart();
   }
 
@@ -268,7 +268,7 @@
       const body = $('hzBody');
       if (body) body.innerHTML = `<div class="hz-lines">${failMsg(err, 'hz.fail')}</div>`;
       if (btn) { btn.textContent = T('hz.calc'); btn.disabled = false; }
-      return;
+      return err;                       // quien llame decide si reintenta
     }
     data.horizon = prof;
     data.analysis = Horizon.analyse(prof, st.lc, st.lat, st.lon);
@@ -337,7 +337,7 @@
       const body = $('wxBody');
       if (body) body.innerHTML = `<div class="hz-lines">${failMsg(err, 'wx.fail')}</div>`;
       const btn = $('btnWeather'); if (btn) { btn.textContent = T('wx.load'); btn.disabled = false; }
-      return;
+      return err;                       // quien llame decide si reintenta
     }
     data.weather = fc;
     data.summary = Weather.summarise(fc, st.lc);
@@ -415,7 +415,8 @@
         ? T('vd.hzBlocked', { hz: num(an.horizonAtMax, 1), alt: num(an.sunAltAtMax, 1) })
         : T(an.verdict === 'clear' ? 'vd.hzClear' : 'vd.hzTight', { margin: num(an.margin, 1) });
     } else {
-      rowH.className = 'vd-v'; rowH.textContent = T('vd.hzUnknown');
+      rowH.className = 'vd-v';
+      rowH.textContent = T(busy.verdict || busy.horizon ? 'vd.calculating' : 'vd.hzUnknown');
     }
 
     // --- Nubes ---
@@ -425,7 +426,8 @@
       rowC.className = 'vd-v ' + cls;
       rowC.textContent = T('vd.cloudsValue', { total: tot == null ? '—' : tot, low: lo == null ? '—' : lo });
     } else {
-      rowC.className = 'vd-v'; rowC.textContent = T('vd.cloudsUnknown');
+      rowC.className = 'vd-v';
+      rowC.textContent = T(busy.verdict || busy.weather ? 'vd.calculating' : 'vd.cloudsUnknown');
     }
 
     // --- Semáforo global ---
@@ -466,9 +468,22 @@
     if (busy.verdict) return;
     busy.verdict = true;
     renderVerdict();
-    await Promise.all([loadHorizon(), loadWeather()]);
+
+    /* Las nubes primero, que cuestan seis unidades de cuota, y el relieve
+       despues, que cuesta ciento sesenta y tres. En paralelo se pisaban: si
+       saltaba el limite se quedaban las dos sin dato en vez de una. */
+    const e1 = await loadWeather();
+    const e2 = await loadHorizon();
+
     busy.verdict = false;
     renderVerdict();
+
+    /* Quedarse sin cuota no puede dejar la tarjeta muerta en «sense calcular»
+       para siempre. Se vuelve solo cuando toque, con la cuenta atras a la
+       vista, porque ya no hay ningun boton que pulsar. */
+    const rate = (e1 && e1.rate && e1) || (e2 && e2.rate && e2);
+    if (rate) { retryIn(rate.retryAfter, computeAll, $('vdNote')); return; }
+
     if (!data.clima) loadClima();
   }
 
@@ -479,9 +494,9 @@
    */
   function autoNow() {
     const st = App() && App().state;
-    if (!st || !st.lc || busy.verdict) return;
-    if (data.analysis && data.summary) return;
-    computeAll();
+    if (!st || !st.lc || busy.verdict) return Promise.resolve();
+    if (data.analysis && data.summary) return Promise.resolve();
+    return computeAll();
   }
 
   // =====================================================================
@@ -513,41 +528,67 @@
     if (st.mapLayers && st.mapLayers.me && st.mapLayers.me.bringToFront) st.mapLayers.me.bringToFront();
   }
 
+  const PL_VISIBLE = 3;          // los que se ven sin desplegar
+
+  /** Una tarjeta de punto oficial */
+  function planItem(p, i) {
+    const F = App();
+    const tags = [];
+    tags.push(`<span class="pl-tag ok">${T('pl.dur', { dur: F.fmtDur(p.dur) })}</span>`);
+    if (p.alt != null) tags.push(`<span class="pl-tag">${T('pl.sunAlt', { alt: num(p.alt, 1) })}</span>`);
+    if (p.cloud) {
+      const bad = p.cloud.low >= 40;
+      tags.push(`<span class="pl-tag ${bad ? 'warn' : 'ok'}">` +
+        `${T('pl.clouds', { total: p.cloud.total, low: p.cloud.low })}</span>`);
+    }
+    if (p.people) tags.push(`<span class="pl-tag">${T('pl.capacity', { people: p.people, cars: p.cars })}</span>`);
+
+    const maps = `https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
+
+    return `<div class="pl-item${i === 0 ? ' top' : ''}" data-i="${i}">
+      <div class="pl-rank">${i + 1}</div>
+      <div class="pl-main">
+        <div class="pl-title">${p.n}</div>
+        <div class="pl-sub">${p.m} · ${T('pl.where', {
+          km: p.fromKm < 10 ? p.fromKm.toFixed(1) : Math.round(p.fromKm),
+          dir: I18N.cardinal(p.fromBearing) })}</div>
+        <div class="pl-tags">${tags.join('')}</div>
+        <div class="pl-actions">
+          <button class="pl-act" data-act="use">${T('pl.use')}</button>
+          <a class="pl-act" href="${maps}" target="_blank" rel="noopener">${T('pl.openMap')}</a>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* Dieciocho tarjetas seguidas son un muro. Se enseñan las tres más cercanas
+     —que es lo que casi siempre se va a usar— y el resto queda plegado. */
   function renderPlan() {
     const list = $('plResults');
     const rows = planState.results;
     if (!list) return;
     if (!rows || !rows.length) { list.innerHTML = ''; return; }
-    const F = App();
 
-    list.innerHTML = rows.map((p, i) => {
-      const tags = [];
-      tags.push(`<span class="pl-tag ok">${T('pl.dur', { dur: F.fmtDur(p.dur) })}</span>`);
-      if (p.alt != null) tags.push(`<span class="pl-tag">${T('pl.sunAlt', { alt: num(p.alt, 1) })}</span>`);
-      if (p.cloud) {
-        const bad = p.cloud.low >= 40;
-        tags.push(`<span class="pl-tag ${bad ? 'warn' : 'ok'}">` +
-          `${T('pl.clouds', { total: p.cloud.total, low: p.cloud.low })}</span>`);
-      }
-      if (p.people) tags.push(`<span class="pl-tag">${T('pl.capacity', { people: p.people, cars: p.cars })}</span>`);
+    const head = rows.slice(0, PL_VISIBLE).map(planItem).join('');
+    const rest = rows.slice(PL_VISIBLE);
+    let html = head;
 
-      const maps = `https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
+    if (rest.length) {
+      const open = planState.expanded;
+      html += `<div class="pl-rest${open ? ' on' : ''}" id="plRest">` +
+              rest.map((p, k) => planItem(p, k + PL_VISIBLE)).join('') + `</div>` +
+              `<button class="pl-toggle" id="plToggle">` +
+              (open ? T('pl.showLess') : T('pl.showMore', { n: rest.length })) +
+              `<span class="pl-caret">${open ? '▲' : '▼'}</span></button>`;
+    }
+    list.innerHTML = html;
 
-      return `<div class="pl-item${i === 0 ? ' top' : ''}" data-i="${i}">
-        <div class="pl-rank">${i + 1}</div>
-        <div class="pl-main">
-          <div class="pl-title">${p.n}</div>
-          <div class="pl-sub">${p.m} · ${T('pl.where', {
-            km: p.fromKm < 10 ? p.fromKm.toFixed(1) : Math.round(p.fromKm),
-            dir: I18N.cardinal(p.fromBearing) })}</div>
-          <div class="pl-tags">${tags.join('')}</div>
-          <div class="pl-actions">
-            <button class="pl-act" data-act="use">${T('pl.use')}</button>
-            <a class="pl-act" href="${maps}" target="_blank" rel="noopener">${T('pl.openMap')}</a>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+    const tg = $('plToggle');
+    if (tg) tg.addEventListener('click', () => {
+      planState.expanded = !planState.expanded;
+      renderPlan();
+      if (!planState.expanded) list.scrollIntoView({ block: 'start' });
+    });
 
     list.querySelectorAll('[data-act="use"]').forEach(el => {
       el.addEventListener('click', ev => {
@@ -563,42 +604,46 @@
   /**
    * Los puntos oficiales, ordenados de más cerca a más lejos.
    *
-   * El cálculo es local e instantáneo, así que la lista aparece sola al abrir
-   * la pestaña, sin botones y sin esperar. Lo único que necesita red son las
-   * nubes, y van en UNA petición para los dieciocho: si falla, la lista sigue
-   * estando ahí, solo que sin ese dato.
+   * Va en dos tiempos a propósito. La lista es cálculo local y se pinta al
+   * instante, SIN esperar a nada: encadenarla detrás de la red fue un error
+   * —si el pronóstico tardaba o fallaba, la lista no aparecía nunca—. Las
+   * nubes llegan después y solo añaden una etiqueta a cada tarjeta.
    */
-  async function runPlan() {
-    const st = App().state;
-    if (busy.plan || !st.lc) return;
-    busy.plan = true;
+  function showOfficial() {
+    const st = App() && App().state;
+    if (!st || !st.lc) return false;
+    if (planState.doneFor === locKey(st) && planState.results) return true;
 
-    const status = $('plStatus');
     planState.results = Official.nearest(st.lat, st.lon);
     planState.doneFor = locKey(st);
+    planState.expanded = false;
     renderPlan();
+    const status = $('plStatus');
     if (status) status.innerHTML = T('pl.official', { n: planState.results.length });
+    return true;
+  }
 
+  /** Las nubes de los 18 puntos: una petición, y si falla no pasa nada */
+  async function loadPlanWeather() {
+    const rows = planState.results;
+    if (!rows || !rows.length || busy.plan || rows[0].cloud) return;
+    busy.plan = true;
     try {
-      const wx = await Weather.forecastMany(planState.results);
+      const wx = await Weather.forecastMany(rows);
       let any = false;
-      for (let i = 0; i < planState.results.length; i++) {
+      for (let i = 0; i < rows.length; i++) {
         if (!wx[i] || !wx[i].hours) continue;
-        const h = Weather.hourNear(wx[i].hours, planState.results[i].maxDate);
-        if (h) { planState.results[i].cloud = h; any = true; }
+        const h = Weather.hourNear(wx[i].hours, rows[i].maxDate);
+        if (h) { rows[i].cloud = h; any = true; }
       }
       if (any) renderPlan();
     } catch (e) { /* sin nubes, pero la lista vale igual */ }
-
     busy.plan = false;
   }
 
-  /** Al abrir la pestaña, si no está ya hecho para esta ubicación */
+  /** Compatibilidad: la lista primero, las nubes después */
   function autoPlan() {
-    const st = App() && App().state;
-    if (!st || !st.lc) return;
-    if (busy.plan || planState.doneFor === locKey(st)) return;
-    runPlan();
+    if (showOfficial()) loadPlanWeather();
   }
 
   // =====================================================================
@@ -682,10 +727,14 @@
     renderWeather();
     renderPlan();
     refreshNearby();
-    autoNow();
-    // La lista de puntos oficiales vive en la portada, así que se rehace
-    // siempre: es cálculo local, cuesta milisegundos.
-    autoPlan();
+    /* La lista, ya. Es local y no puede depender de que haya red. */
+    showOfficial();
+
+    /* El resto en cadena, no a la vez: el veredicto gasta unas 170 unidades de
+       cuota y las nubes de los 18 puntos otras 54. Lanzados en paralelo se
+       pisaban y saltaba el límite del minuto justo en el arranque, que es
+       cuando peor sienta. */
+    autoNow().then(loadPlanWeather);
   }
 
   // =====================================================================
@@ -743,7 +792,7 @@
   bind('btnHorizon', loadHorizon);
   bind('btnWeather', loadWeather);
   bind('btnClima', loadClima);
-  bind('btnPlan', runPlan);
+  bind('btnPlan', autoPlan);          // el botón ya no existe; queda por si vuelve
 
   const seg = $('plRadius');
   if (seg) {

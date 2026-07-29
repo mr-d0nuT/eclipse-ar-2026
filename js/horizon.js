@@ -24,12 +24,16 @@
   const R_EF = R_EARTH / (1 - 0.13);
 
   /* El muestreo está calibrado contra el límite real de la API: 600 sondeos
-     por minuto. Un perfil completo son 14 rayos × 22 distancias = 309, que
-     cabe de sobra; el planificador tiene su propio presupuesto más abajo. */
+     por minuto, medidos.
+
+     Antes eran 14 rayos × 22 distancias = 309 sondeos, y como esto se calcula
+     solo al abrir la app, un arranque se comía media cuota del minuto. Con 3°
+     entre rayos y 18 distancias son 163: la silueta del terreno sale igual de
+     bien —se interpola entre rayos— y queda sitio para todo lo demás. */
   const D_MIN = 200;                   // metros
   const D_MAX = 80000;                 // 80 km: Montserrat desde Barcelona cuenta
-  const N_DIST = 22;
-  const AZ_STEP = 2;
+  const N_DIST = 18;
+  const AZ_STEP = 3;
 
   // Respaldo cuando aún no se conocen las circunstancias locales. Cubre toda
   // la península: A Coruña empieza el eclipse en el 270° y Palma lo acaba en
