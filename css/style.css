@@ -575,3 +575,28 @@ footer { text-align: center; padding: 26px 0 0; }
   .sunpos { grid-template-columns: 1fr; justify-items: center; }
   .sunpos-data { width: 100%; }
 }
+
+/* ---------- Buscador de lugares ---------- */
+.findbar { position: relative; margin: 0 0 14px; }
+#findInput {
+  width: 100%; box-sizing: border-box;
+  background: var(--panel); border: 1px solid var(--panel-brd);
+  border-radius: 999px; padding: 11px 16px; font-size: 14px;
+  color: var(--txt); font-family: inherit; outline: none; transition: .18s;
+}
+#findInput::placeholder { color: var(--txt-faint); }
+#findInput:focus { border-color: var(--corona); box-shadow: 0 0 0 3px rgba(255,210,125,.14); }
+.find-list {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+  background: #0d111f; border: 1px solid var(--panel-brd-hi); border-radius: 14px;
+  overflow: hidden; box-shadow: var(--shadow); max-height: 320px; overflow-y: auto;
+}
+.find-list.on { display: block; }
+.find-item {
+  display: block; width: 100%; text-align: left; border: 0; cursor: pointer;
+  background: transparent; color: var(--txt); font-family: inherit;
+  font-size: 13px; line-height: 1.35; padding: 11px 14px;
+}
+.find-item + .find-item { border-top: 1px solid rgba(255,255,255,.06); }
+.find-item:hover, .find-item:focus { background: rgba(255,210,125,.10); }
+.find-item small { display: block; color: var(--txt-faint); font-size: 11px; margin-top: 2px; }

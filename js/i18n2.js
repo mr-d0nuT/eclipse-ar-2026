@@ -13,6 +13,9 @@
     /* ================= CATALÀ ================= */
     ca: {
       'tab.now': 'Ara',
+      'find.ph': 'Escriu un poble, una adreça o un codi postal…',
+      'find.loading': 'Cercant…',
+      'find.fail': 'No s’ha trobat. Prova-ho amb un altre nom.',
       'tab.plan': 'Planificar',
       'tab.sky': 'Cel',
       'dock.arShort': 'AR',
@@ -148,6 +151,9 @@
     /* ================= CASTELLANO ================= */
     es: {
       'tab.now': 'Ahora',
+      'find.ph': 'Escribe un pueblo, una dirección o un código postal…',
+      'find.loading': 'Buscando…',
+      'find.fail': 'No se ha encontrado. Prueba con otro nombre.',
       'tab.plan': 'Planificar',
       'tab.sky': 'Cielo',
       'dock.arShort': 'AR',
@@ -283,6 +289,9 @@
     /* ================= ENGLISH ================= */
     en: {
       'tab.now': 'Now',
+      'find.ph': 'Type a town, address or postcode…',
+      'find.loading': 'Searching…',
+      'find.fail': 'Not found. Try another name.',
       'tab.plan': 'Plan',
       'tab.sky': 'Sky',
       'dock.arShort': 'AR',
@@ -418,6 +427,9 @@
     /* ================= FRANÇAIS ================= */
     fr: {
       'tab.now': 'Maintenant',
+      'find.ph': 'Saisis une commune, une adresse ou un code postal…',
+      'find.loading': 'Recherche…',
+      'find.fail': 'Introuvable. Essaie un autre nom.',
       'tab.plan': 'Planifier',
       'tab.sky': 'Ciel',
       'dock.arShort': 'RA',
@@ -553,6 +565,9 @@
     /* ================= DEUTSCH ================= */
     de: {
       'tab.now': 'Jetzt',
+      'find.ph': 'Ort, Adresse oder Postleitzahl eingeben…',
+      'find.loading': 'Suche…',
+      'find.fail': 'Nicht gefunden. Anderen Namen versuchen.',
       'tab.plan': 'Planen',
       'tab.sky': 'Himmel',
       'dock.arShort': 'AR',

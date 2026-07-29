@@ -685,6 +685,55 @@
     if ($('pane-plan') && $('pane-plan').classList.contains('on')) autoPlan();
   }
 
+  // =====================================================================
+  // BUSCADOR DE LUGARES
+  // =====================================================================
+  /* Escribes dónde vas a estar y listo. Faltaba lo más obvio: hasta ahora la
+     ubicación solo se podía poner con el GPS, tocando el mapa o con los
+     botones de ciudades. */
+  (function findBox() {
+    const inp = $('findInput'), list = $('findList');
+    if (!inp || !list) return;
+    let timer = null, seq = 0;
+
+    const close = () => { list.innerHTML = ''; list.classList.remove('on'); };
+
+    inp.addEventListener('input', () => {
+      clearTimeout(timer);
+      const q = inp.value;
+      if (q.trim().length < 3) { close(); return; }
+      // Se espera a que pare de teclear: una petición por pulsación sobraría
+      timer = setTimeout(async () => {
+        const mine = ++seq;
+        const items = await Geocode.suggest(q);
+        if (mine !== seq) return;                 // llegó tarde, ya hay otra
+        if (!items.length) { close(); return; }
+        list.innerHTML = items.map((c, i) =>
+          `<button class="find-item" data-i="${i}">${c.label}` +
+          (c.province ? `<small>${c.province}</small>` : '') + `</button>`).join('');
+        list.classList.add('on');
+        list.querySelectorAll('.find-item').forEach(el => {
+          el.addEventListener('click', async () => {
+            const c = items[+el.dataset.i];
+            el.textContent = T('find.loading');
+            const hit = await Geocode.resolve(c.label);
+            close();
+            if (!hit) { inp.value = ''; inp.placeholder = T('find.fail'); return; }
+            inp.value = '';
+            inp.blur();
+            App().setLocation(hit.lat, hit.lon, 0, hit.muni || hit.label);
+            setTab('now');
+          });
+        });
+      }, 320);
+    });
+
+    inp.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.findbar')) close();
+    });
+  })();
+
   // Botones
   const bind = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
   bind('btnVerdict', computeAll);
