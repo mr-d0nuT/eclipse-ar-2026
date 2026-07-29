@@ -668,3 +668,31 @@ footer { text-align: center; padding: 26px 0 0; }
 .hz-legend .sw-ter { background: #ff5f6d; }
 .hz-legend .sw-obs { background: #4fd6ff; }
 .hz-legend .sw-los { background: var(--corona-hot); }
+
+/* ---------- Pulsación mantenida en el mapa ---------- */
+.dt-press {
+  width: 54px; height: 54px; border-radius: 50%;
+  transform: translate(-50%, -50%) scale(.2);
+  border: 3px solid var(--corona);
+  background: rgba(255,210,125,.18);
+  animation: dtPress .55s ease-out forwards;
+}
+@keyframes dtPress {
+  from { transform: translate(-50%,-50%) scale(.2); opacity: .35; }
+  to   { transform: translate(-50%,-50%) scale(1);  opacity: 1; }
+}
+
+/* ---------- Deslizador temporal del perfil ---------- */
+.dt-scrub { margin-top: 10px; }
+.dt-scrub input[type=range] { width: 100%; accent-color: var(--corona-hot); background: transparent; }
+.dt-scrub-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--txt-dim); margin-bottom: 6px;
+}
+.dt-scrub-row b { color: var(--corona); font-variant-numeric: tabular-nums; font-size: 13px; }
+.dt-scrub-row .city-btn { margin-left: auto; }
+.dt-hides { font-size: 12.5px; line-height: 1.55; margin-bottom: 10px; }
+.dt-hides:empty { display: none; }
+.dt-hides.warn { color: var(--warn); }
+.dt-hides.ok { color: var(--txt-dim); }
+.dt-hides b { color: #fff; }

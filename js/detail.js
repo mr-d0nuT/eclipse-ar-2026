@@ -48,6 +48,13 @@
   let map = null, layers = {};
   let placeCache = {};
 
+  /* Instante que se está mirando en el perfil. null = el máximo.
+     El punto naranja del gráfico es el Sol, y su altura cambia mucho a lo
+     largo del eclipse: de unos 14° en C1 a 0° en el ocaso. Con la línea de
+     visión clavada en el máximo no se podía ver a qué hora, exactamente,
+     empieza a taparlo el terreno. */
+  let chartAt = null;
+
   // ---------------------------------------------------------------------
   // Formato
   // ---------------------------------------------------------------------
@@ -89,9 +96,48 @@
       maxZoom: 19, opacity: 1
     }).addTo(map);
 
-    map.on('click', e => {
+    /* PULSACIÓN MANTENIDA para mover el punto, no un toque simple.
+       Con un toque, arrastrar el mapa o hacer zoom con dos dedos te cambiaba
+       la posición sin querer, y con ella todos los cálculos. Manteniendo
+       pulsado es un gesto deliberado: sale un aro que crece mientras aguantas
+       y vibra al soltarse, así se ve que ha registrado. */
+    let pressTimer = null, pressAt = null, pressRing = null;
+
+    const clearRing = () => {
+      if (pressRing) { map.removeLayer(pressRing); pressRing = null; }
+    };
+    const cancelPress = () => {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      clearRing();
+    };
+
+    map.on('mousedown', e => {
+      cancelPress();
+      pressAt = e.latlng;
+      pressRing = L.marker(e.latlng, {
+        interactive: false,
+        icon: L.divIcon({ className: '', iconSize: [54, 54],
+          html: '<div class="dt-press"></div>' })
+      }).addTo(map);
+
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        clearRing();
+        if (navigator.vibrate) navigator.vibrate(28);
+        App().setLocation(pressAt.lat, pressAt.lng, 0, T('dt.mapPoint'));
+      }, 550);
+    });
+
+    // Cualquier cosa que no sea aguantar quieto lo cancela
+    ['mouseup', 'mouseout', 'movestart', 'zoomstart', 'dragstart'].forEach(ev =>
+      map.on(ev, cancelPress));
+
+    // En escritorio, el clic derecho hace lo mismo sin esperar
+    map.on('contextmenu', e => {
+      cancelPress();
       App().setLocation(e.latlng.lat, e.latlng.lng, 0, T('dt.mapPoint'));
     });
+
     // Al alejar o acercar, el círculo se reescala para seguir siendo útil
     map.on('zoomend', () => drawMarkers(false));
     return map;
@@ -251,7 +297,7 @@
      quedaba en «calculando el relieve» para siempre. Net.cached() deduplica
      las peticiones en vuelo, así que pedirlo desde los dos sitios no lo baja
      dos veces. */
-  let asking = false, askedFor = null;
+  let asking = false, askedFor = null, retryStop = false;
 
   async function ensureProfile() {
     const st = App() && App().state;
@@ -260,9 +306,12 @@
     if (askedFor === k) return;              // ya se intentó para este punto
     askedFor = k;
     asking = true;
+    retryStop = false;
     const verdict = $('dtVerdict');
     try {
-      await Horizon.profile(st.lat, st.lon, st.lc);
+      // Un solo rayo, el del azimut del máximo: 21 sondeos en vez de 163.
+      // Es lo que hace viable ir probando sitios uno detrás de otro.
+      await Horizon.ray(st.lat, st.lon, st.lc.max.az);
       asking = false;
       drawChart();
     } catch (e) {
@@ -270,8 +319,9 @@
       if (e && e.rate) {
         // Sin cuota: se vuelve solo, con la cuenta atrás a la vista
         let left = Math.max(1, e.retryAfter);
+        retryStop = false;
         (function tick() {
-          if (!$('dtVerdict')) return;
+          if (retryStop || !$('dtVerdict')) return;
           if (left <= 0) { askedFor = null; ensureProfile(); return; }
           $('dtVerdict').innerHTML = `<span class="dt-v-wait">${T('pl.retrying', { s: left })}</span>`;
           left--;
@@ -288,24 +338,50 @@
     const st = App() && App().state;
     if (!cv || !st || !st.lc) return;
 
-    const prof = Horizon.cachedProfile(st.lat, st.lon);
+    const lc = st.lc;
+    const when = chartAt || lc.max.date;
+    const sun = Astro.sunAltAz(when, st.lat, st.lon);
+    const az = sun.az, alt = sun.altRefracted;
     const verdict = $('dtVerdict');
 
-    if (!prof) {
+    // El deslizador recorre desde C1 hasta el ocaso, que es la parte que se ve
+    const set = Astro.sunRiseSet(lc.max.date, st.lat, st.lon).set;
+    const t0 = lc.c1.date.getTime();
+    const t1 = (set && set < lc.c4.date ? set : lc.c4.date).getTime();
+    const sl = $('dtSlider');
+    if (sl && !sl.dataset.dragging) {
+      sl.value = Math.round(((when.getTime() - t0) / (t1 - t0)) * 1000);
+    }
+    const tEl = $('dtTime'), sEl = $('dtSunAt');
+    if (tEl) tEl.textContent = App().fmtTime(when) + (chartAt ? '' : ' · ' + T('dt.isMax'));
+    if (sEl) sEl.textContent = T('dt.sunAtLine', { alt: alt.toFixed(2), az: az.toFixed(1) });
+
+    /* Dos orígenes posibles, y se prefiere el que ya esté descargado:
+       el abanico completo si la tarjeta del horizonte lo bajó, y si no, el
+       rayo suelto del azimut del máximo, que cuesta ocho veces menos. */
+    let obs = null, pts = null;
+    const prof = Horizon.cachedProfile(st.lat, st.lon);
+    if (prof) {
+      let ray = prof.rays[0];
+      for (const r of prof.rays) if (Math.abs(r.az - az) < Math.abs(ray.az - az)) ray = r;
+      obs = prof.obsElev;
+      pts = ray.samples.filter(s => s[0] <= MAX_D);
+    } else {
+      const r = Horizon.cachedRay(st.lat, st.lon, az) ||
+                Horizon.cachedRay(st.lat, st.lon, lc.max.az);
+      if (r) { obs = r.obsElev; pts = r.samples.filter(s => s[0] <= MAX_D); }
+    }
+
+    if (!pts || !pts.length) {
       cv.style.display = 'none';
       if (verdict && !asking) verdict.innerHTML = `<span class="dt-v-wait">${T('dt.visWait')}</span>`;
       ensureProfile();
       return;
     }
     cv.style.display = '';
-
-    // El rayo más cercano al azimut del máximo
-    const az = st.lc.max.az, alt = st.lc.max.altRefracted;
-    let ray = prof.rays[0];
-    for (const r of prof.rays) if (Math.abs(r.az - az) < Math.abs(ray.az - az)) ray = r;
-
-    const pts = ray.samples.filter(s => s[0] <= MAX_D);
-    const obs = prof.obsElev;
+    // Ya hay datos: se corta cualquier cuenta atrás de reintento pendiente,
+    // que si no acaba pisando el veredicto recién calculado.
+    asking = false; retryStop = true;
 
     // ¿Cruza el terreno la línea de visibilidad?
     let blocked = null;
@@ -387,10 +463,56 @@
       g.beginPath(); g.arc(X(blocked.d), Y(blocked.h), 7, 0, 7); g.stroke();
     }
 
+    /* ¿A qué hora, exactamente, se lo come el terreno?
+       Un cerro de 300 m a 5 km sube 3,4°. Con el Sol a 4,3° en el máximo lo
+       salvas, pero el Sol sigue cayendo y doce minutos después ya está a 2°:
+       verías empezar la totalidad y perderías el resto. Preguntar solo por el
+       instante del máximo se deja fuera ese caso, que es de los peores.
+
+       El corte es de un azimut fijo, así que el ángulo del horizonte en esta
+       dirección es un solo número; el resto es buscar cuándo el Sol baja de él. */
+    let hzAngle = 0;
+    for (const [d, h] of pts) hzAngle = Math.max(hzAngle, Horizon.elevationAngle(h - obs, d));
+
+    let hides = null;
+    if (hzAngle > 0) {
+      const altAt = ms => Astro.sunAltAz(new Date(ms), st.lat, st.lon).altRefracted;
+      let lo = lc.c1.date.getTime(), hi = t1;
+      if (altAt(lo) > hzAngle && altAt(hi) < hzAngle) {
+        for (let i = 0; i < 30; i++) {
+          const mid = (lo + hi) / 2;
+          if (altAt(mid) > hzAngle) lo = mid; else hi = mid;
+        }
+        hides = new Date((lo + hi) / 2);
+      }
+    }
+    const hidesEl = $('dtHides');
+    /* Cuándo merece un aviso y cuándo no.
+       Un horizonte llano SIEMPRE «tapa» el Sol unos minutos antes del ocaso:
+       con el observador a 3 m y el terreno a 8 m, el ángulo sale 0,4°, y el
+       Sol pasa por 0,4° cuatro minutos antes de ponerse. Avisar de eso es dar
+       la alarma en vano, y quien recibe alarmas en vano deja de mirarlas.
+       Solo cuenta si hay relieve de verdad (≥ 1°) y además te quita tiempo. */
+    const costsTime = hides && hzAngle >= 1 && (t1 - hides.getTime()) > 3 * 60000;
+    if (hidesEl) {
+      if (hides && costsTime) {
+        const dm = Math.round((hides - lc.max.date) / 60000);
+        hidesEl.className = 'dt-hides warn';
+        hidesEl.innerHTML = T('dt.hidesAt', {
+          time: App().fmtTime(hides), hz: hzAngle.toFixed(1),
+          rel: dm >= 0 ? T('dt.afterMax', { m: dm }) : T('dt.beforeMax', { m: -dm })
+        });
+      } else {
+        hidesEl.className = 'dt-hides ok';
+        hidesEl.innerHTML = T('dt.hidesNever', { hz: hzAngle.toFixed(1) });
+      }
+    }
+
     if (verdict) {
+      const hhmm = App().fmtTime(when);
       verdict.innerHTML = blocked
-        ? `<span class="dt-v-bad">${T('dt.visNo', { km: (blocked.d / 1000).toFixed(1) })}</span>`
-        : `<span class="dt-v-ok">${T('dt.visYes')}</span>`;
+        ? `<span class="dt-v-bad">${T('dt.visNoAt', { time: hhmm, km: (blocked.d / 1000).toFixed(1) })}</span>`
+        : `<span class="dt-v-ok">${T('dt.visYesAt', { time: hhmm })}</span>`;
     }
   }
 
@@ -401,7 +523,7 @@
     if (!App() || !$('dtPanel')) return;
     const st = App().state;
     const k = st.lat.toFixed(3) + ',' + st.lon.toFixed(3);
-    if (askedFor && askedFor !== k) askedFor = null;   // punto nuevo, otro intento
+    if (askedFor && askedFor !== k) { askedFor = null; chartAt = null; }  // punto nuevo
     render();
     ensureMap();
     drawMarkers(true);
@@ -414,7 +536,26 @@
     drawChart();
   }
 
+  (function scrubber() {
+    const sl = $('dtSlider'), bt = $('dtToMax');
+    if (!sl) return;
+    const onMove = () => {
+      const st = App() && App().state;
+      if (!st || !st.lc) return;
+      const lc = st.lc;
+      const set = Astro.sunRiseSet(lc.max.date, st.lat, st.lon).set;
+      const t0 = lc.c1.date.getTime();
+      const t1 = (set && set < lc.c4.date ? set : lc.c4.date).getTime();
+      chartAt = new Date(t0 + (t1 - t0) * (+sl.value / 1000));
+      drawChart();
+    };
+    sl.addEventListener('pointerdown', () => { sl.dataset.dragging = '1'; });
+    sl.addEventListener('pointerup', () => { delete sl.dataset.dragging; });
+    sl.addEventListener('input', onMove);
+    if (bt) bt.addEventListener('click', () => { chartAt = null; drawChart(); });
+  })();
+
   addEventListener('resize', () => drawChart());
 
-  global.Detail = { refresh, shown, drawChart, dms, dur };
+  global.Detail = { refresh, shown, drawChart, dms, dur, get map() { return map; } };
 })(window);

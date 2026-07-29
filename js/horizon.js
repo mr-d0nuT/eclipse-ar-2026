@@ -279,6 +279,54 @@
     return out;
   })();
 
+  /* -------------------------------------------------------------------
+     Un solo rayo, para el perfil de visibilidad
+
+     El abanico completo son 163 sondeos, porque hace falta para dibujar la
+     silueta del terreno en todo el recorrido del Sol. Pero el corte de
+     visibilidad al estilo del IGN solo necesita UNA dirección: la del máximo.
+     Con 21 sondeos en vez de 163, probar diez sitios seguidos cuesta 210 y no
+     1.630, que es la diferencia entre poder hacerlo y no poder.
+
+     El límite de Open-Meteo es por IP, no por dispositivo: dos móviles en la
+     misma casa comparten cuota. Razón de más para no gastar de sobra.
+     ------------------------------------------------------------------- */
+  const RAY_D = (function () {
+    const out = [], n = 20, dmin = 150, dmax = 20000;
+    const ratio = Math.pow(dmax / dmin, 1 / (n - 1));
+    for (let i = 0; i < n; i++) out.push(dmin * Math.pow(ratio, i));
+    return out;
+  })();
+
+  /**
+   * Perfil del terreno en una sola dirección, hasta 20 km.
+   * @returns {Promise<{obsElev:number, samples:Array<[number,number]>}|null>}
+   */
+  async function ray(lat, lon, az) {
+    const key = `ray:${lat.toFixed(4)},${lon.toFixed(4)},${Math.round(az)}`;
+    try {
+      const res = await Net.cached(key, null, async () => {
+        const pts = [{ lat, lon }];
+        for (const d of RAY_D) pts.push(destPoint(lat, lon, az, d));
+        const elev = await fetchElevations(pts);
+        return {
+          obsElev: elev[0],
+          samples: RAY_D.map((d, i) => [Math.round(d), Math.round(elev[i + 1])])
+        };
+      });
+      return res.value;
+    } catch (e) {
+      if (e && e.rate) throw e;
+      return null;
+    }
+  }
+
+  /** El rayo ya guardado, sin tocar la red */
+  function cachedRay(lat, lon, az) {
+    const hit = Net.get(`ray:${lat.toFixed(4)},${lon.toFixed(4)},${Math.round(az)}`, null);
+    return hit ? hit.value : null;
+  }
+
   /** Sondeos que cuesta mirar el horizonte de un sitio, y de `n` sitios */
   const COARSE_PER_SPOT = 1 + 3 * COARSE_D.length;
   const coarseCost = n => n * COARSE_PER_SPOT;
@@ -398,6 +446,7 @@
   global.Horizon = {
     profile, cachedProfile, horizonAt, analyse, sunTrack, horizonMany,
     elevations, isSea, elevationAngle, destPoint, fanFor, fanOf, coarseCost, isCached,
+    ray, cachedRay, RAY_D,
     AZ_FROM, AZ_TO, DISTANCES, COARSE_PER_SPOT
   };
 })(window);

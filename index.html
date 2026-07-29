@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body>
 
@@ -221,7 +221,16 @@
       <div class="dt-vis">
         <div class="dt-h" data-i18n="dt.visProfile"></div>
         <div class="dt-verdict" id="dtVerdict"></div>
+        <div class="dt-hides" id="dtHides"></div>
         <canvas id="dtChart"></canvas>
+        <div class="dt-scrub">
+          <div class="dt-scrub-row">
+            <b id="dtTime">—</b>
+            <span id="dtSunAt"></span>
+            <button class="city-btn" id="dtToMax" data-i18n="dt.toMax"></button>
+          </div>
+          <input type="range" id="dtSlider" min="0" max="1000" value="500" step="1">
+        </div>
         <div class="hz-legend">
           <span><i class="sw-ter"></i><span data-i18n="dt.legTerrain"></span></span>
           <span><i class="sw-obs"></i><span data-i18n="dt.legObs"></span></span>
@@ -383,22 +392,22 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/i18n.js?v=16"></script>
-<script src="js/i18n2.js?v=16"></script>
-<script src="js/netcache.js?v=16"></script>
-<script src="js/places.js?v=16"></script>
-<script src="js/official.js?v=16"></script>
-<script src="js/geocode.js?v=16"></script>
-<script src="js/detail.js?v=16"></script>
-<script src="js/spots.js?v=16"></script>
-<script src="js/voice.js?v=16"></script>
-<script src="js/astro.js?v=16"></script>
-<script src="js/eclipse.js?v=16"></script>
-<script src="js/horizon.js?v=16"></script>
-<script src="js/weather.js?v=16"></script>
-<script src="js/planner.js?v=16"></script>
-<script src="js/ar.js?v=16"></script>
-<script src="js/app.js?v=16"></script>
-<script src="js/panels.js?v=16"></script>
+<script src="js/i18n.js?v=17"></script>
+<script src="js/i18n2.js?v=17"></script>
+<script src="js/netcache.js?v=17"></script>
+<script src="js/places.js?v=17"></script>
+<script src="js/official.js?v=17"></script>
+<script src="js/geocode.js?v=17"></script>
+<script src="js/detail.js?v=17"></script>
+<script src="js/spots.js?v=17"></script>
+<script src="js/voice.js?v=17"></script>
+<script src="js/astro.js?v=17"></script>
+<script src="js/eclipse.js?v=17"></script>
+<script src="js/horizon.js?v=17"></script>
+<script src="js/weather.js?v=17"></script>
+<script src="js/planner.js?v=17"></script>
+<script src="js/ar.js?v=17"></script>
+<script src="js/app.js?v=17"></script>
+<script src="js/panels.js?v=17"></script>
 </body>
 </html>
