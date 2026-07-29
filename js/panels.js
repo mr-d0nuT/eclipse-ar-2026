@@ -791,6 +791,19 @@
     });
   })();
 
+  /* Botones «i» de las cabeceras: enseñan y esconden su explicación.
+     Los textos de ayuda ocupaban sitio permanente para algo que se lee una vez
+     y ya, asi que van plegados detras de la «i». */
+  document.querySelectorAll('.info-btn[data-info]').forEach(b => {
+    const box = $(b.dataset.info);
+    if (!box) return;
+    b.setAttribute('aria-expanded', 'false');
+    b.addEventListener('click', () => {
+      const open = box.classList.toggle('hidden');
+      b.setAttribute('aria-expanded', String(!open));
+    });
+  });
+
   // Botones
   const bind = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
   bind('btnVerdict', computeAll);

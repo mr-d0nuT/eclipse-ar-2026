@@ -741,3 +741,22 @@ footer { text-align: center; padding: 26px 0 0; }
 /* Sin subtítulo, el titular respira un poco menos */
 header.hero { padding: 6px 0 10px; }
 .locbar { margin-top: 2px; }
+
+/* ---------- Botón de información en las cabeceras ---------- */
+.info-btn {
+  width: 18px; height: 18px; flex: 0 0 auto; margin-left: 2px;
+  display: grid; place-items: center; cursor: pointer;
+  border-radius: 50%; border: 1px solid var(--panel-brd-hi);
+  background: transparent; color: var(--txt-dim);
+  font: 700 11px Georgia, serif; line-height: 1; padding: 0;
+  transition: .16s; text-transform: none; letter-spacing: 0;
+}
+.info-btn:hover { color: var(--corona); border-color: var(--corona); }
+.info-btn[aria-expanded="true"] {
+  color: #1a0f00; background: var(--corona); border-color: var(--corona);
+}
+.info-box {
+  margin-top: 12px; padding: 11px 13px; border-radius: var(--r-sm);
+  background: rgba(255,210,125,.06); border: 1px solid rgba(255,210,125,.18);
+  animation: paneIn .18s ease-out;
+}
