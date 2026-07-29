@@ -83,7 +83,10 @@ header.hero { text-align: center; padding: 10px 0 20px; }
   color: var(--corona); font-weight: 700; margin-bottom: 10px;
 }
 h1 {
-  font-size: clamp(26px, 7.5vw, 40px); line-height: 1.05; margin: 0 0 8px;
+  /* Una sola linea: el <br> forzado del texto se quito, y el tamaño baja lo
+     justo para que «12 d'agost de 2026» quepa incluso en pantallas de 320 px. */
+  font-size: clamp(17px, 5.5vw, 33px); line-height: 1.1; margin: 0;
+  white-space: nowrap;
   font-weight: 800; letter-spacing: -.02em;
   background: linear-gradient(100deg, #fff 10%, var(--corona) 45%, var(--flare) 75%, #fff 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -191,8 +194,8 @@ h1 {
 .tappable:hover { transform: translateY(-1px); }
 .tappable:active { transform: scale(.985); }
 .cd-hint {
-  text-align: center; font-size: 10px; color: var(--txt-faint);
-  margin-top: 10px; letter-spacing: .04em;
+  text-align: center; font-size: 9.5px; color: var(--txt-faint);
+  margin-top: 7px; letter-spacing: .04em;
 }
 .countdown.speaking .cd-num { animation: sayPulse .9s ease-out; }
 @keyframes sayPulse {
@@ -203,31 +206,31 @@ h1 {
 
 .countdown-label {
   text-align: center; font-size: 12px; letter-spacing: .18em;
-  text-transform: uppercase; color: var(--corona); font-weight: 700; margin-bottom: 14px;
+  text-transform: uppercase; color: var(--corona); font-weight: 700; margin-bottom: 10px;
 }
 .countdown {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center;
 }
 .cd-unit {
   background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
   border: 1px solid var(--panel-brd); border-radius: var(--r-sm);
-  padding: 14px 4px 10px;
+  padding: 8px 4px 6px;
 }
 .cd-num {
-  font-size: clamp(24px, 8vw, 38px); font-weight: 800; line-height: 1;
+  font-size: clamp(21px, 6.6vw, 31px); font-weight: 800; line-height: 1;
   font-variant-numeric: tabular-nums; letter-spacing: -.02em;
   background: linear-gradient(180deg, #fff, var(--corona));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.cd-lab { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-faint); margin-top: 7px; }
+.cd-lab { font-size: 8.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--txt-faint); margin-top: 4px; }
 .countdown.urgent .cd-num { background: linear-gradient(180deg, #fff, var(--flare)); -webkit-background-clip: text; background-clip: text; }
 .countdown.urgent { animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.02); } }
 
 /* ---------- Barra de progreso ---------- */
-.progress-shell { margin-top: 20px; }
+.progress-shell { margin-top: 12px; }
 .progress-track {
-  position: relative; height: 12px; border-radius: 999px;
+  position: relative; height: 9px; border-radius: 999px;
   background: rgba(255,255,255,.07); overflow: visible;
   border: 1px solid var(--panel-brd);
 }
@@ -243,12 +246,12 @@ h1 {
   border-left: 2px solid #fff; border-right: 2px solid #fff;
   border-radius: 3px; pointer-events: none;
 }
-.progress-marks { position: relative; height: 34px; margin-top: 8px; }
+.progress-marks { position: relative; height: 24px; margin-top: 6px; }
 .pmark {
   position: absolute; transform: translateX(-50%); text-align: center;
-  font-size: 9px; color: var(--txt-faint); letter-spacing: .06em; white-space: nowrap;
+  font-size: 8.5px; color: var(--txt-faint); letter-spacing: .04em; white-space: nowrap;
 }
-.pmark b { display: block; color: var(--txt-dim); font-size: 10px; font-weight: 700; }
+.pmark b { display: block; color: var(--txt-dim); font-size: 9px; font-weight: 700; }
 .pmark.passed b { color: var(--corona); }
 
 /* ---------- Fases / timeline ---------- */
@@ -736,5 +739,5 @@ footer { text-align: center; padding: 26px 0 0; }
 }
 
 /* Sin subtítulo, el titular respira un poco menos */
-header.hero { padding: 8px 0 14px; }
+header.hero { padding: 6px 0 10px; }
 .locbar { margin-top: 2px; }

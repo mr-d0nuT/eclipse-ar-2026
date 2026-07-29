@@ -14,7 +14,7 @@
       'doc.title': 'Eclipsi AR 2026 · 12 d\'agost',
 
       'app.kicker': 'Eclipsi Solar Total',
-      'app.title': '12 d\'agost<br>de 2026',
+      'app.title': '12 d\'agost de 2026',
       'app.subtitle': 'El primer eclipsi total visible des de la península ibèrica en més d\'un segle',
       'app.geo': 'Fer servir la meva ubicació GPS',
       'app.geoActive': 'Ubicació GPS activa',
@@ -227,7 +227,7 @@
       'doc.title': 'Eclipse AR 2026 · 12 de agosto',
 
       'app.kicker': 'Eclipse Solar Total',
-      'app.title': '12 de agosto<br>de 2026',
+      'app.title': '12 de agosto de 2026',
       'app.subtitle': 'El primer eclipse total visible desde la península ibérica en más de un siglo',
       'app.geo': 'Usar mi ubicación GPS',
       'app.geoActive': 'Ubicación GPS activa',
@@ -440,7 +440,7 @@
       'doc.title': 'Eclipse AR 2026 · 12 August',
 
       'app.kicker': 'Total Solar Eclipse',
-      'app.title': '12 August<br>2026',
+      'app.title': '12 August 2026',
       'app.subtitle': 'The first total eclipse visible from the Iberian Peninsula in over a century',
       'app.geo': 'Use my GPS location',
       'app.geoActive': 'GPS location active',
@@ -653,7 +653,7 @@
       'doc.title': 'Éclipse AR 2026 · 12 août',
 
       'app.kicker': 'Éclipse Solaire Totale',
-      'app.title': '12 août<br>2026',
+      'app.title': '12 août 2026',
       'app.subtitle': 'La première éclipse totale visible depuis la péninsule Ibérique en plus d\'un siècle',
       'app.geo': 'Utiliser ma position GPS',
       'app.geoActive': 'Position GPS active',
@@ -866,7 +866,7 @@
       'doc.title': 'Eclipse AR 2026 · 12. August',
 
       'app.kicker': 'Totale Sonnenfinsternis',
-      'app.title': '12. August<br>2026',
+      'app.title': '12. August 2026',
       'app.subtitle': 'Die erste totale Sonnenfinsternis auf der Iberischen Halbinsel seit über einem Jahrhundert',
       'app.geo': 'Meinen GPS-Standort verwenden',
       'app.geoActive': 'GPS-Standort aktiv',
