@@ -838,6 +838,18 @@
   // GEOLOCALIZACIÓN
   // =====================================================================
   /**
+   * Estado del punto de GPS de la cabecera: el CSS lo colorea y lo hace
+   * parpadear según `data-geo`. La etiqueta sigue escribiéndose para quien
+   * navegue con lector de pantalla.
+   * @param {'idle'|'locating'|'active'|'error'} state
+   */
+  function setGeoState(state, label) {
+    const b = $('btnGeo'), l = $('geoLabel');
+    if (b) { b.dataset.geo = state; if (label) b.title = label; }
+    if (l && label) l.textContent = label;
+  }
+
+  /**
    * Pide la ubicación al navegador.
    * @param {boolean} silent en el arranque automático no molestamos con
    *        alertas si el usuario deniega el permiso o no hay señal.
@@ -847,17 +859,17 @@
       if (!silent) alert(T('app.geoUnsupported'));
       return;
     }
-    $('geoLabel').innerHTML = `<span class="spinner"></span> ${T('app.geoLocating')}`;
+    setGeoState('locating', T('app.geoLocating'));
     navigator.geolocation.getCurrentPosition(
       p => {
         state.usingGeo = true;
-        $('geoLabel').textContent = T('app.geoActive');
+        setGeoState('active', T('app.geoActive'));
         setLocation(p.coords.latitude, p.coords.longitude, p.coords.altitude || 0,
                     T('app.myLocation'), 'app.myLocation');
         sayWelcome();          // ya sabemos dónde estás: ahora sí, saludo
       },
       err => {
-        $('geoLabel').textContent = T('app.geo');
+        setGeoState('error', T('app.geoError'));
         if (!silent) alert(T('app.geoError') + err.message + '\n\n' + T('app.geoHttps'));
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }

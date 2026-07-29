@@ -346,8 +346,9 @@ h1 {
 .pane.on { display: block; animation: paneIn .22s ease-out; }
 @keyframes paneIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* El titular ocupa media pantalla: solo tiene sentido en la portada */
-body.tab-plan header.hero, body.tab-sky header.hero { display: none; }
+/* El titular se queda siempre: sin el subtítulo son dos líneas, y la cuenta
+   atrás vive justo debajo y también es global. Ocultarlo en unas pestañas y
+   no en otras dejaba la cuenta atrás huérfana, sin decir de qué eclipse. */
 
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -696,3 +697,45 @@ footer { text-align: center; padding: 26px 0 0; }
 .dt-hides.warn { color: var(--warn); }
 .dt-hides.ok { color: var(--txt-dim); }
 .dt-hides b { color: #fff; }
+
+/* ---------- Punto de estado del GPS ---------- */
+/* Sustituye al chip «Ubicación GPS activa»: un punto junto a las banderas que
+   dice de un vistazo si el GPS está buscando, fijado o denegado. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.langbar { align-items: center; }
+.geo-dot {
+  width: 28px; height: 28px; margin-left: 4px; flex: 0 0 auto;
+  display: grid; place-items: center; cursor: pointer;
+  border-radius: 50%; border: 1px solid var(--panel-brd);
+  background: rgba(255,255,255,.05); color: var(--txt-faint);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.geo-dot svg { width: 15px; height: 15px; }
+.geo-dot:active { transform: scale(.92); }
+
+/* Buscando: ámbar, parpadeo rápido */
+.geo-dot[data-geo="locating"] {
+  color: var(--warn); border-color: rgba(255,202,74,.5); background: rgba(255,202,74,.12);
+  animation: geoBlink .8s ease-in-out infinite;
+}
+/* Fijado: verde, latido lento */
+.geo-dot[data-geo="active"] {
+  color: var(--ok); border-color: rgba(70,227,155,.5); background: rgba(70,227,155,.12);
+  animation: geoPulse 2.4s ease-in-out infinite;
+}
+/* Denegado o sin señal: rojo, quieto */
+.geo-dot[data-geo="error"] {
+  color: var(--danger); border-color: rgba(255,95,109,.5); background: rgba(255,95,109,.12);
+}
+@keyframes geoBlink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+@keyframes geoPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(70,227,155,.35); }
+  50%     { box-shadow: 0 0 0 5px rgba(70,227,155,0); }
+}
+
+/* Sin subtítulo, el titular respira un poco menos */
+header.hero { padding: 8px 0 14px; }
+.locbar { margin-top: 2px; }
