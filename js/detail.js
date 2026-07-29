@@ -245,6 +245,44 @@
     return obsElev + d * Math.tan(altDeg * Math.PI / 180) + (d * d) / (2 * R_EF);
   }
 
+  /* El perfil se PIDE aquí si no está.
+     Antes solo se dibujaba cuando ya estaba en la caché, esperando a que lo
+     bajara la tarjeta del veredicto; si aquella fallaba por cuota, esto se
+     quedaba en «calculando el relieve» para siempre. Net.cached() deduplica
+     las peticiones en vuelo, así que pedirlo desde los dos sitios no lo baja
+     dos veces. */
+  let asking = false, askedFor = null;
+
+  async function ensureProfile() {
+    const st = App() && App().state;
+    if (!st || !st.lc || asking) return;
+    const k = st.lat.toFixed(3) + ',' + st.lon.toFixed(3);
+    if (askedFor === k) return;              // ya se intentó para este punto
+    askedFor = k;
+    asking = true;
+    const verdict = $('dtVerdict');
+    try {
+      await Horizon.profile(st.lat, st.lon, st.lc);
+      asking = false;
+      drawChart();
+    } catch (e) {
+      asking = false;
+      if (e && e.rate) {
+        // Sin cuota: se vuelve solo, con la cuenta atrás a la vista
+        let left = Math.max(1, e.retryAfter);
+        (function tick() {
+          if (!$('dtVerdict')) return;
+          if (left <= 0) { askedFor = null; ensureProfile(); return; }
+          $('dtVerdict').innerHTML = `<span class="dt-v-wait">${T('pl.retrying', { s: left })}</span>`;
+          left--;
+          setTimeout(tick, 1000);
+        })();
+      } else if (verdict) {
+        verdict.innerHTML = `<span class="dt-v-wait">${T('hz.fail')}</span>`;
+      }
+    }
+  }
+
   function drawChart() {
     const cv = $('dtChart');
     const st = App() && App().state;
@@ -255,7 +293,8 @@
 
     if (!prof) {
       cv.style.display = 'none';
-      if (verdict) verdict.innerHTML = `<span class="dt-v-wait">${T('dt.visWait')}</span>`;
+      if (verdict && !asking) verdict.innerHTML = `<span class="dt-v-wait">${T('dt.visWait')}</span>`;
+      ensureProfile();
       return;
     }
     cv.style.display = '';
@@ -360,6 +399,9 @@
   // ---------------------------------------------------------------------
   function refresh() {
     if (!App() || !$('dtPanel')) return;
+    const st = App().state;
+    const k = st.lat.toFixed(3) + ',' + st.lon.toFixed(3);
+    if (askedFor && askedFor !== k) askedFor = null;   // punto nuevo, otro intento
     render();
     ensureMap();
     drawMarkers(true);
