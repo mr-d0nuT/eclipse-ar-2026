@@ -570,6 +570,13 @@
     const btn = $('btnPlan'), status = $('plStatus');
     if (btn) { btn.textContent = T('pl.searching'); btn.disabled = true; }
 
+    /* Limpiar ANTES de empezar. Si la búsqueda falla a mitad y se dejan los
+       resultados de la anterior en pantalla, el usuario cambia de banda, ve la
+       misma lista y concluye —con razón— que la app le está mintiendo. */
+    planState.results = null;
+    renderPlan();
+    drawHeat(null);
+
     try {
       const res = await Planner.searchSpots(st.lat, st.lon, planState.range, (phase, a, b) => {
         if (status) status.textContent = T('pl.phase.' + phase) + (b > 1 ? ` (${a}/${b})` : '');
@@ -577,10 +584,14 @@
       planState.results = res;
       if (status) {
         const lines = [];
+        // La banda va delante siempre: si dos búsquedas dan parecido, el
+        // usuario tiene que poder ver de un vistazo a cuál corresponde la lista.
+        const band = `<b>${planState.rangeLabel}</b> · `;
         if (!res.results.length) lines.push(T('pl.none', { range: planState.rangeLabel }));
-        else if (res.fellBack) lines.push(T('pl.doneGrid', { n: res.results.length }));
-        else lines.push(T('pl.doneSpots', { n: res.results.length, seen: res.spots }));
+        else if (res.fellBack) lines.push(band + T('pl.doneGrid', { n: res.results.length }));
+        else lines.push(band + T('pl.doneSpots', { n: res.results.length, seen: res.spots }));
         if (res.results.length && res.filled) lines.push(T('pl.filled'));
+        if (res.results.length && !res.landChecked) lines.push(T('pl.noLandCheck'));
         status.innerHTML = lines.join('<br>');
       }
       renderPlan();

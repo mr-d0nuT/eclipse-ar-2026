@@ -400,12 +400,25 @@
        nombre, pero se les mira el relieve y los edificios igual, y al menos
        dicen hacia dónde tirar. */
     const filled = cands.length < MIN_FINALISTS;
+    let seaChecked = true;
     if (filled) {
+      const fromGrid = [];
       for (const p of grid(lat, lon, max, 240).points) {
         if (!inBand(p.km)) continue;
         const c = candidate(p);
-        if (c) cands.push(c);
+        if (c) fromGrid.push(c);
       }
+
+      /* Los puntos de rejilla, a diferencia de los sitios de OpenStreetMap, no
+         están necesariamente en tierra: a ocho kilómetros de la costa media
+         banda cae en el mar. Se comprueba la altitud de un puñado repartido
+         —el DEM da exactamente 0 en el agua— y se tira lo que flota.
+         Solo de unos pocos: el grueso de la cuota lo necesita el horizonte. */
+      for (const p of fromGrid) p.q = quality(p);
+      const probe = topDiverse(fromGrid, 60, Math.max(0.15, max / 14));
+      seaChecked = await markLand(probe,
+        (a, b) => { if (onProgress) onProgress('land', a, b); });
+      for (const p of (seaChecked ? probe.filter(x => !x.sea) : probe)) cands.push(p);
     }
 
     if (!cands.length) {
@@ -437,9 +450,15 @@
        así que los que no tienen carretera, o tienen casas metidas en la línea
        de visión, se caen de la lista —salvo que quedasen tan pocos que la
        respuesta dejara de ser útil, y entonces se enseñan bien marcados. */
-    const good = finalists.filter(p =>
+    /* Red de seguridad contra el mar: al calcularles el horizonte, los
+       finalistas traen su altitud real del DEM. Un cero ahí es agua, y eso no
+       admite matices: se cae de la lista pase lo que pase, aunque nos quedemos
+       sin resultados. Un punto en el Mediterráneo no es una respuesta. */
+    const dry = finalists.filter(p => !(p.elev === 0 && !p.kind));
+
+    const good = dry.filter(p =>
       p.roads !== 0 && !(p.buildings && p.buildings.sight >= 3));
-    const shown = good.length >= MIN_FINALISTS ? good : finalists;
+    const shown = good.length >= MIN_FINALISTS ? good : dry;
     shown.sort((a, b) => b.q - a.q);
 
     const results = shown.slice(0, N_RESULTS).map(p => Object.assign({}, p, {
@@ -452,7 +471,7 @@
     const g = max >= 10 ? evaluateGrid(lat, lon, max) : null;
     return {
       results, grid: g, from: { lat, lon }, range,
-      spots: cands.length, filled, fellBack: !raw, landChecked: false
+      spots: cands.length, filled, fellBack: !raw, landChecked: !filled || seaChecked
     };
   }
 
