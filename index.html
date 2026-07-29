@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/style.css?v=19">
+<link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 
@@ -149,25 +149,22 @@
       </div>
     </section>
 
-    <!-- ── Veredicte ── -->
-    <section class="card verdict" id="verdictCard">
-      <h2><span class="dot"></span><span data-i18n="card.verdict"></span></h2>
-      <div class="vd-head">
-        <div class="vd-badge" id="vdBadge" data-i18n="vd.unknown"></div>
-        <div class="vd-headline" id="vdHeadline"></div>
-      </div>
-      <div class="vd-rows">
-        <div class="vd-row">
-          <span class="vd-l" data-i18n="vd.rowHorizon"></span>
-          <span class="vd-v" id="vdHorizon">—</span>
-        </div>
-        <div class="vd-row">
-          <span class="vd-l" data-i18n="vd.rowClouds"></span>
-          <span class="vd-v" id="vdClouds">—</span>
+    <!-- ── Horitzó ── -->
+    <section class="card">
+      <h2><span class="dot"></span><span data-i18n="card.horizon"></span></h2>
+      <div class="muted" data-i18n="hz.intro"></div>
+      <div class="hz-wrap hidden" id="hzWrap">
+        <canvas id="hzCanvas" width="760" height="380"></canvas>
+        <div class="hz-legend">
+          <span><i class="sw-terrain"></i><span data-i18n="hz.terrain"></span></span>
+          <span><i class="sw-sun"></i><span data-i18n="hz.sunpath"></span></span>
         </div>
       </div>
-      <div class="muted" id="vdNote" data-i18n="vd.intro"></div>
+      <div id="hzBody"></div>
+      <div class="muted hz-note" data-i18n="hz.note"></div>
     </section>
+
+    
 
     <!-- ── On em poso ── -->
     <section class="card">
@@ -190,20 +187,7 @@
       <div class="wx-clima"><div id="climaBody"></div></div>
     </section>
 
-    <!-- ── Horitzó ── -->
-    <section class="card">
-      <h2><span class="dot"></span><span data-i18n="card.horizon"></span></h2>
-      <div class="muted" data-i18n="hz.intro"></div>
-      <div class="hz-wrap hidden" id="hzWrap">
-        <canvas id="hzCanvas" width="760" height="380"></canvas>
-        <div class="hz-legend">
-          <span><i class="sw-terrain"></i><span data-i18n="hz.terrain"></span></span>
-          <span><i class="sw-sun"></i><span data-i18n="hz.sunpath"></span></span>
-        </div>
-      </div>
-      <div id="hzBody"></div>
-      <div class="muted hz-note" data-i18n="hz.note"></div>
-    </section>
+    
 
     <!-- ── Eines ── -->
     <section class="toolbar">
@@ -392,22 +376,22 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/i18n.js?v=19"></script>
-<script src="js/i18n2.js?v=19"></script>
-<script src="js/netcache.js?v=19"></script>
-<script src="js/places.js?v=19"></script>
-<script src="js/official.js?v=19"></script>
-<script src="js/geocode.js?v=19"></script>
-<script src="js/detail.js?v=19"></script>
-<script src="js/spots.js?v=19"></script>
-<script src="js/voice.js?v=19"></script>
-<script src="js/astro.js?v=19"></script>
-<script src="js/eclipse.js?v=19"></script>
-<script src="js/horizon.js?v=19"></script>
-<script src="js/weather.js?v=19"></script>
-<script src="js/planner.js?v=19"></script>
-<script src="js/ar.js?v=19"></script>
-<script src="js/app.js?v=19"></script>
-<script src="js/panels.js?v=19"></script>
+<script src="js/i18n.js?v=20"></script>
+<script src="js/i18n2.js?v=20"></script>
+<script src="js/netcache.js?v=20"></script>
+<script src="js/places.js?v=20"></script>
+<script src="js/official.js?v=20"></script>
+<script src="js/geocode.js?v=20"></script>
+<script src="js/detail.js?v=20"></script>
+<script src="js/spots.js?v=20"></script>
+<script src="js/voice.js?v=20"></script>
+<script src="js/astro.js?v=20"></script>
+<script src="js/eclipse.js?v=20"></script>
+<script src="js/horizon.js?v=20"></script>
+<script src="js/weather.js?v=20"></script>
+<script src="js/planner.js?v=20"></script>
+<script src="js/ar.js?v=20"></script>
+<script src="js/app.js?v=20"></script>
+<script src="js/panels.js?v=20"></script>
 </body>
 </html>

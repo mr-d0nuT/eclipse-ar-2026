@@ -484,7 +484,9 @@
        para siempre. Se vuelve solo cuando toque, con la cuenta atras a la
        vista, porque ya no hay ningun boton que pulsar. */
     const rate = (e1 && e1.rate && e1) || (e2 && e2.rate && e2);
-    if (rate) { retryIn(rate.retryAfter, computeAll, $('vdNote')); return; }
+    /* La tarjeta del veredicto ya no existe, así que la cuenta atrás va donde
+       de verdad se echa en falta el dato: la tarjeta del terreno. */
+    if (rate) { retryIn(rate.retryAfter, computeAll, $('hzBody')); return; }
 
     if (!data.clima) loadClima();
   }
