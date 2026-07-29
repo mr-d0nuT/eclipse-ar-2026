@@ -67,8 +67,9 @@
     if (name === 'plan') {
       const m = App() && App().state.map;
       if (m) setTimeout(() => m.invalidateSize(), 60);
-      if (App()) { refreshNearby(); autoPlan(); }
+      if (App()) refreshNearby();
     }
+    if (name === 'now' && App()) autoPlan();
     if (name === 'now' && data.analysis) drawHorizonChart();
   }
 
@@ -682,7 +683,9 @@
     renderPlan();
     refreshNearby();
     autoNow();
-    if ($('pane-plan') && $('pane-plan').classList.contains('on')) autoPlan();
+    // La lista de puntos oficiales vive en la portada, así que se rehace
+    // siempre: es cálculo local, cuesta milisegundos.
+    autoPlan();
   }
 
   // =====================================================================

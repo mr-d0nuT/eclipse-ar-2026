@@ -10,7 +10,9 @@ El primer eclipse total visible desde la España peninsular en más de un siglo.
 
 ## ✨ Qué hace
 
-La app se organiza en tres pestañas: **Ahora** (cuánto falta y si lo verás), **Planificar** (a dónde ir) y **Cielo** (simulación y datos).
+La app se organiza en tres pestañas. **Ahora** responde a las dos preguntas que importan, una debajo de la otra: *¿lo veré desde aquí?* y *¿a qué puntos oficiales puedo ir?*. **Planificar** tiene el mapa de la franja, y **Cielo** la simulación y los datos técnicos.
+
+Al abrir coge tu posición por GPS, y puedes escribir cualquier población, dirección o código postal de España en el buscador de la cabecera.
 
 ### Lo que decide si ves el eclipse
 
