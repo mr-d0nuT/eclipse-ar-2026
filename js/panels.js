@@ -15,7 +15,24 @@
   // Datos descargados para la ubicación actual
   let data = { key: null, horizon: null, analysis: null, weather: null, summary: null, clima: null };
   let busy = { verdict: false, horizon: false, weather: false, clima: false, plan: false };
-  let planState = { range: { min: 1, max: 25 }, rangeLabel: '> 1 km', results: null, heatLayer: null };
+  // Una sola búsqueda, de 0 a 25 km, partida en «al lado» y «más lejos»
+  const RANGE = { min: 0, max: 25, nearKm: 1 };
+  let planState = { results: null, heatLayer: null, doneFor: null };
+
+  /* Reintento automático. Cuando la API gratuita corta por cuota, la espera es
+     de un minuto: pedirle al usuario que vuelva a darle a un botón que ya no
+     existe sería absurdo. Se reintenta solo, con la cuenta atrás a la vista. */
+  let retryTimer = null;
+  function retryIn(seconds, fn, el) {
+    clearTimeout(retryTimer);
+    let left = Math.max(1, seconds);
+    (function tick() {
+      if (left <= 0) { if (el) el.textContent = ''; fn(); return; }
+      if (el) el.innerHTML = T('pl.retrying', { s: left });
+      left--;
+      retryTimer = setTimeout(tick, 1000);
+    })();
+  }
 
   const locKey = s => s.lat.toFixed(3) + ',' + s.lon.toFixed(3);
   const num = (v, d) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d == null ? 1 : d);
@@ -50,7 +67,7 @@
     if (name === 'plan') {
       const m = App() && App().state.map;
       if (m) setTimeout(() => m.invalidateSize(), 60);
-      if (App()) refreshNearby();
+      if (App()) { refreshNearby(); autoPlan(); }
     }
     if (name === 'now' && data.analysis) drawHorizonChart();
   }
@@ -451,6 +468,19 @@
     await Promise.all([loadHorizon(), loadWeather()]);
     busy.verdict = false;
     renderVerdict();
+    if (!data.clima) loadClima();
+  }
+
+  /**
+   * Se calcula solo al abrir, sin que haya que pulsar nada. Cuesta una vez por
+   * ubicación: el relieve se guarda para siempre y la previsión tres horas, así
+   * que volver a la app no gasta nada.
+   */
+  function autoNow() {
+    const st = App() && App().state;
+    if (!st || !st.lc || busy.verdict) return;
+    if (data.analysis && data.summary) return;
+    computeAll();
   }
 
   // =====================================================================
@@ -484,124 +514,90 @@
 
   function renderPlan() {
     const list = $('plResults');
-    const res = planState.results;
+    const rows = planState.results;
     if (!list) return;
-    if (!res || !res.results.length) { list.innerHTML = ''; return; }
+    if (!rows || !rows.length) { list.innerHTML = ''; return; }
     const F = App();
 
-    list.innerHTML = res.results.map((p, i) => {
-      // El titular es el sitio, cuando lo hay; la totalidad va justo debajo,
-      // porque «Coll de la Creu» dice mucho más que «41.48, 1.52».
-      // La altitud etiquetada en OSM si la hay; si no, la que devolvió el
-      // modelo de elevación al calcularle el horizonte.
-      const ele = p.ele != null ? p.ele : (p.elev != null ? Math.round(p.elev) : null);
-      const eleTag = ele != null ? ` <span class="pl-ele">${ele} m</span>` : '';
-      const title = p.kind
-        ? (p.name || T('pl.kind.' + p.kind)) + eleTag
-        : T('pl.spotHere') + eleTag;
-
-      const bits = [];
-      bits.push(p.total ? T('pl.dur', { dur: F.fmtDur(p.dur) })
-                        : T('pl.noTotality', { pct: (p.obs * 100).toFixed(1) }));
-      bits.push(T('pl.where', { km: Math.round(p.fromKm), dir: I18N.cardinal(p.fromBearing) }));
-      bits.push(T('pl.nearPlace', { km: Math.round(p.near.km), place: p.near.place.n }));
-
+    list.innerHTML = rows.map((p, i) => {
       const tags = [];
-      if (p.kind) tags.push(`<span class="pl-tag">${T('pl.kind.' + p.kind)}</span>`);
-      if (p.roads > 0) tags.push(`<span class="pl-tag ok">${T('pl.road')}</span>`);
-      else if (p.roads === 0) tags.push(`<span class="pl-tag bad">${T('pl.roadNo')}</span>`);
-
-      // Lo que el modelo de elevación no ve, y que mandó a una calle de pueblo
-      if (p.buildings) {
-        if (p.buildings.sight >= 3) tags.push(`<span class="pl-tag bad">${T('pl.bldBlocked', { n: p.buildings.sight })}</span>`);
-        else if (p.buildings.sight >= 1) tags.push(`<span class="pl-tag warn">${T('pl.bldSome', { n: p.buildings.sight })}</span>`);
-        else if (p.buildings.around >= 40) tags.push(`<span class="pl-tag warn">${T('pl.bldTown')}</span>`);
-        else tags.push(`<span class="pl-tag ok">${T('pl.bldClear')}</span>`);
-      } else if (p.roads == null) {
-        // OpenStreetMap no contestó: mejor decirlo que dejar creer que está mirado
-        tags.push(`<span class="pl-tag warn">${T('pl.accessUnknown')}</span>`);
+      tags.push(`<span class="pl-tag ok">${T('pl.dur', { dur: F.fmtDur(p.dur) })}</span>`);
+      if (p.alt != null) tags.push(`<span class="pl-tag">${T('pl.sunAlt', { alt: num(p.alt, 1) })}</span>`);
+      if (p.cloud) {
+        const bad = p.cloud.low >= 40;
+        tags.push(`<span class="pl-tag ${bad ? 'warn' : 'ok'}">` +
+          `${T('pl.clouds', { total: p.cloud.total, low: p.cloud.low })}</span>`);
       }
+      if (p.people) tags.push(`<span class="pl-tag">${T('pl.capacity', { people: p.people, cars: p.cars })}</span>`);
 
-      if (p.margin == null) tags.push(`<span class="pl-tag">${T('pl.hzUnknown')}</span>`);
-      else if (p.margin <= 0) tags.push(`<span class="pl-tag bad">${T('pl.hzBad', { hz: num(p.horizon, 1) })}</span>`);
-      else tags.push(`<span class="pl-tag ok">${T('pl.hz', { hz: num(p.horizon, 1), margin: num(p.margin, 1) })}</span>`);
-
-      if (p.cloud) tags.push(`<span class="pl-tag">${T('pl.clouds', { total: p.cloud.total, low: p.cloud.low })}</span>`);
-      else tags.push(`<span class="pl-tag">${T('pl.cloudsUnknown')}</span>`);
-
-      tags.push(`<span class="pl-tag">${T('pl.sunAlt', { alt: num(p.alt, 1) })}</span>`);
-
-      const maps = `https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
+      const maps = `https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
 
       return `<div class="pl-item${i === 0 ? ' top' : ''}" data-i="${i}">
         <div class="pl-rank">${i + 1}</div>
         <div class="pl-main">
-          <div class="pl-title">${title}</div>
-          <div class="pl-sub">${bits.join(' · ')}</div>
+          <div class="pl-title">${p.n}</div>
+          <div class="pl-sub">${p.m} · ${T('pl.where', {
+            km: p.fromKm < 10 ? p.fromKm.toFixed(1) : Math.round(p.fromKm),
+            dir: I18N.cardinal(p.fromBearing) })}</div>
           <div class="pl-tags">${tags.join('')}</div>
-          <div class="pl-q"><i style="width:${Math.round(Math.min(1, p.q) * 100)}%"></i></div>
           <div class="pl-actions">
             <button class="pl-act" data-act="use">${T('pl.use')}</button>
             <a class="pl-act" href="${maps}" target="_blank" rel="noopener">${T('pl.openMap')}</a>
           </div>
         </div>
-        <button class="pl-go" data-act="use" title="${T('pl.use')}">→</button>
       </div>`;
     }).join('');
 
     list.querySelectorAll('[data-act="use"]').forEach(el => {
       el.addEventListener('click', ev => {
         ev.preventDefault();
-        const item = el.closest('.pl-item');
-        const p = res.results[+item.dataset.i];
+        const p = rows[+el.closest('.pl-item').dataset.i];
         if (!p) return;
-        const name = p.name || (p.kind ? T('pl.kind.' + p.kind) : null) ||
-                     T('pl.nearPlace', { km: Math.round(p.near.km), place: p.near.place.n });
-        App().setLocation(p.lat, p.lon, p.ele != null ? p.ele : (p.elev || 0), name);
+        App().setLocation(p.lat, p.lon, 0, p.n + ' (' + p.m + ')');
         Panels.setTab('now');
       });
     });
   }
 
+  /**
+   * Los puntos oficiales, ordenados de más cerca a más lejos.
+   *
+   * El cálculo es local e instantáneo, así que la lista aparece sola al abrir
+   * la pestaña, sin botones y sin esperar. Lo único que necesita red son las
+   * nubes, y van en UNA petición para los dieciocho: si falla, la lista sigue
+   * estando ahí, solo que sin ese dato.
+   */
   async function runPlan() {
     const st = App().state;
-    if (busy.plan) return;
+    if (busy.plan || !st.lc) return;
     busy.plan = true;
-    const btn = $('btnPlan'), status = $('plStatus');
-    if (btn) { btn.textContent = T('pl.searching'); btn.disabled = true; }
 
-    /* Limpiar ANTES de empezar. Si la búsqueda falla a mitad y se dejan los
-       resultados de la anterior en pantalla, el usuario cambia de banda, ve la
-       misma lista y concluye —con razón— que la app le está mintiendo. */
-    planState.results = null;
+    const status = $('plStatus');
+    planState.results = Official.nearest(st.lat, st.lon);
+    planState.doneFor = locKey(st);
     renderPlan();
-    drawHeat(null);
+    if (status) status.innerHTML = T('pl.official', { n: planState.results.length });
 
     try {
-      const res = await Planner.searchSpots(st.lat, st.lon, planState.range, (phase, a, b) => {
-        if (status) status.textContent = T('pl.phase.' + phase) + (b > 1 ? ` (${a}/${b})` : '');
-      });
-      planState.results = res;
-      if (status) {
-        const lines = [];
-        // La banda va delante siempre: si dos búsquedas dan parecido, el
-        // usuario tiene que poder ver de un vistazo a cuál corresponde la lista.
-        const band = `<b>${planState.rangeLabel}</b> · `;
-        if (!res.results.length) lines.push(T('pl.none', { range: planState.rangeLabel }));
-        else if (res.fellBack) lines.push(band + T('pl.doneGrid', { n: res.results.length }));
-        else lines.push(band + T('pl.doneSpots', { n: res.results.length, seen: res.spots }));
-        if (res.results.length && res.filled) lines.push(T('pl.filled'));
-        if (res.results.length && !res.landChecked) lines.push(T('pl.noLandCheck'));
-        status.innerHTML = lines.join('<br>');
+      const wx = await Weather.forecastMany(planState.results);
+      let any = false;
+      for (let i = 0; i < planState.results.length; i++) {
+        if (!wx[i] || !wx[i].hours) continue;
+        const h = Weather.hourNear(wx[i].hours, planState.results[i].maxDate);
+        if (h) { planState.results[i].cloud = h; any = true; }
       }
-      renderPlan();
-      drawHeat(res.grid);
-    } catch (e) {
-      if (status) status.innerHTML = failMsg(e, 'pl.fail');
-    }
+      if (any) renderPlan();
+    } catch (e) { /* sin nubes, pero la lista vale igual */ }
 
     busy.plan = false;
-    if (btn) { btn.textContent = T('pl.search'); btn.disabled = false; }
+  }
+
+  /** Al abrir la pestaña, si no está ya hecho para esta ubicación */
+  function autoPlan() {
+    const st = App() && App().state;
+    if (!st || !st.lc) return;
+    if (busy.plan || planState.doneFor === locKey(st)) return;
+    runPlan();
   }
 
   // =====================================================================
@@ -685,6 +681,8 @@
     renderWeather();
     renderPlan();
     refreshNearby();
+    autoNow();
+    if ($('pane-plan') && $('pane-plan').classList.contains('on')) autoPlan();
   }
 
   // Botones

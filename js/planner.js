@@ -99,12 +99,18 @@
    * cien casas detrás y las vistas perfectamente libres.
    * @param {{sight:number, around:number}|null} b null = no se ha podido mirar
    */
+  /**
+   * Los edificios de OSM son señal fiable y vetan (ver el filtro de abajo).
+   * La arboleda no: `around` mide la distancia al BORDE del polígono, así que
+   * un bosque al lado puede no estar entre tú y el Sol. Penaliza fuerte y se
+   * avisa, pero no elimina, o media montaña se quedaría fuera por un pinar
+   * que ni siquiera estorba.
+   */
   function buildingFactor(b) {
     if (!b) return 0.9;                    // sin comprobar: duda razonable
-    if (b.sight >= 10) return 0.06;        // estás dentro del casco urbano
-    if (b.sight >= 3)  return 0.18;
-    if (b.sight >= 1)  return 0.45;
-    if (b.around >= 40) return 0.75;       // pegado a un pueblo, pero despejado
+    if (b.sight >= 1) return 0.05;         // casas entre el sitio y el Sol
+    if (b.trees >= 1) return 0.30;         // puede haber arboleda delante
+    if (b.around >= 40) return 0.85;       // pegado a un pueblo, pero despejado
     return 1;
   }
 
@@ -364,6 +370,7 @@
   async function searchSpots(lat, lon, range, onProgress) {
     const rep = (phase, a, b) => { if (onProgress) onProgress(phase, a, b); };
     const min = range.min || 0, max = range.max;
+    const near = range.nearKm || 0;      // frontera «al lado» / «más lejos»
     const inBand = km => km >= min && km <= max;
 
     /** Un punto cualquiera, con sus circunstancias locales resueltas */
@@ -426,9 +433,21 @@
     }
     for (const p of cands) p.q = quality(p);
 
-    // La separación mínima escala con la banda: en un radio de un kilómetro,
-    // exigir tres de distancia dejaría un solo resultado.
-    let finalists = topDiverse(cands, N_FINALISTS, Math.max(0.15, max / 8));
+    /* Una sola búsqueda responde a las dos preguntas —«¿tengo algo al lado?» y
+       «¿y si me muevo?»— reservando plazas para cada grupo. Sin la reserva,
+       los sitios lejanos, que casi siempre puntúan mejor porque tienen más
+       totalidad, se llevarían la lista entera y el usuario no vería nunca lo
+       que tiene a diez minutos andando. */
+    let finalists;
+    if (near > 0) {
+      finalists = topDiverse(cands.filter(p => p.km < near), 5, 0.15)
+        .concat(topDiverse(cands.filter(p => p.km >= near), 9, Math.max(0.5, max / 10)));
+      finalists.sort((a, b) => b.q - a.q);
+    } else {
+      // La separación mínima escala con la banda: en un radio de un kilómetro,
+      // exigir tres de distancia dejaría un solo resultado.
+      finalists = topDiverse(cands, N_FINALISTS, Math.max(0.15, max / 8));
+    }
 
     /* El relieve de un sitio ya mirado está guardado y no cuesta red, así que
        solo se paga por los que faltan. Sin esta cuenta, repetir una búsqueda o
@@ -470,21 +489,41 @@
        sin resultados. Un punto en el Mediterráneo no es una respuesta. */
     const dry = finalists.filter(p => !(p.elev === 0 && !p.kind));
 
-    const good = dry.filter(p =>
-      p.roads !== 0 && !(p.buildings && p.buildings.sight >= 3));
-    const shown = good.length >= MIN_FINALISTS ? good : dry;
+    /* VETO, no penalización.
+       Mandar a alguien a un sitio desde el que no se ve el trozo de cielo
+       donde va a estar el eclipse es el peor fallo posible: se entera cuando
+       ya está allí y ya no hay tiempo de moverse. Así que estas tres cosas no
+       restan puntos, eliminan:
+
+         · el terreno se come al Sol, o le pasa a menos de 0,3°
+         · hay edificios entre el sitio y el Sol
+         · no se llega en coche
+
+       Si no sobrevive ninguno, la respuesta honrada es «aquí no hay nada
+       despejado», no una lista de sitios malos ordenados por lo malos que son. */
+    const shown = dry.filter(p =>
+      p.roads !== 0 &&
+      !(p.margin != null && p.margin <= 0.3) &&
+      !(p.buildings && p.buildings.sight >= 1)
+    );
     shown.sort((a, b) => b.q - a.q);
 
-    const results = shown.slice(0, N_RESULTS).map(p => Object.assign({}, p, {
+    const decorate = p => Object.assign({}, p, {
       near: Places.nearest(p.lat, p.lon),
       fromKm: Places.distKm(lat, lon, p.lat, p.lon),
       fromBearing: Places.bearing(lat, lon, p.lat, p.lon)
-    }));
+    });
+
+    const all = shown.map(decorate);
+    const results = near > 0
+      ? all.filter(p => p.fromKm < near).slice(0, 4)
+          .concat(all.filter(p => p.fromKm >= near).slice(0, 6))
+      : all.slice(0, N_RESULTS);
 
     // Rejilla local solo para el mapa de calor: no cuesta red
     const g = max >= 10 ? evaluateGrid(lat, lon, max) : null;
     return {
-      results, grid: g, from: { lat, lon }, range,
+      results, grid: g, from: { lat, lon }, range, nearKm: near,
       spots: cands.length, filled, fellBack: !raw, landChecked: !filled || seaChecked
     };
   }

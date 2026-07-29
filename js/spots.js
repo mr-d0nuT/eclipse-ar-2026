@@ -179,27 +179,34 @@
    */
   async function checkAccess(points) {
     if (!points.length) return [];
-    const key = 'access:' + points.map(p =>
+    const key = 'acc2:' + points.map(p =>
       p.lat.toFixed(4) + ',' + p.lon.toFixed(4) + ',' + Math.round(p.azMax || 286)).join(';');
 
     const lines = ['[out:json][timeout:60];'];
     points.forEach((p, i) => {
       const d = Horizon.destPoint(p.lat, p.lon, p.azMax || 286, SIGHT_OFFSET);
+      const at = `${d.lat.toFixed(5)},${d.lon.toFixed(5)}`;
       lines.push(`way(around:${ROAD_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)})["highway"~"${DRIVABLE}"]->.r${i};`);
-      lines.push(`way(around:${SIGHT_R},${d.lat.toFixed(5)},${d.lon.toFixed(5)})["building"]->.b${i};`);
+      lines.push(`way(around:${SIGHT_R},${at})["building"]->.b${i};`);
+      // Un pinar delante tapa igual que una casa, y el DEM tampoco lo ve
+      lines.push(`(way(around:${SIGHT_R},${at})["natural"="wood"];` +
+                 `way(around:${SIGHT_R},${at})["landuse"="forest"];)->.t${i};`);
       lines.push(`way(around:${DENSITY_R},${p.lat.toFixed(5)},${p.lon.toFixed(5)})["building"]->.v${i};`);
     });
     points.forEach((p, i) => {
-      lines.push(`.r${i} out count;`); lines.push(`.b${i} out count;`); lines.push(`.v${i} out count;`);
+      lines.push(`.r${i} out count;`); lines.push(`.b${i} out count;`);
+      lines.push(`.t${i} out count;`); lines.push(`.v${i} out count;`);
     });
 
     try {
       const res = await Net.cached(key, SPOTS_TTL, async () => {
         const j = await ask(lines.join('\n'), 60000);
         const c = (j.elements || []).filter(e => e.type === 'count');
-        if (c.length !== points.length * 3) throw new Error('cuentas incompletas');
+        if (c.length !== points.length * 4) throw new Error('cuentas incompletas');
         const n = i => parseInt(c[i].tags.ways, 10) || 0;
-        return points.map((p, i) => ({ roads: n(3 * i), sight: n(3 * i + 1), around: n(3 * i + 2) }));
+        return points.map((p, i) => ({
+          roads: n(4 * i), sight: n(4 * i + 1), trees: n(4 * i + 2), around: n(4 * i + 3)
+        }));
       });
       return res.value;
     } catch (e) {
