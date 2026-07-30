@@ -113,9 +113,13 @@ h1 {
 
 /* ---------- Chip de ubicación ---------- */
 .locbar {
+  /* Sin wrap: con el municipio dentro, el chip se alarga y el punto del GPS
+     se quedaba solo en una linea de arriba. Ahora el chip crece hacia abajo
+     y el punto se mantiene a su lado. */
   display: flex; gap: 8px; align-items: center; justify-content: center;
-  flex-wrap: wrap; margin: 0 0 14px;
+  flex-wrap: nowrap; margin: 0 0 14px;
 }
+.locbar .chip { white-space: normal; text-align: center; min-width: 0; }
 .chip {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--panel); border: 1px solid var(--panel-brd);
@@ -193,10 +197,7 @@ h1 {
 .tappable { cursor: pointer; transition: .18s; border-radius: var(--r-sm); }
 .tappable:hover { transform: translateY(-1px); }
 .tappable:active { transform: scale(.985); }
-.cd-hint {
-  text-align: center; font-size: 9.5px; color: var(--txt-faint);
-  margin-top: 7px; letter-spacing: .04em;
-}
+.cd-hint { text-align: center; font-size: 10.5px; color: var(--txt-dim); letter-spacing: .02em; }
 .countdown.speaking .cd-num { animation: sayPulse .9s ease-out; }
 @keyframes sayPulse {
   0%   { filter: brightness(1); }
@@ -206,7 +207,11 @@ h1 {
 
 .countdown-label {
   text-align: center; font-size: 12px; letter-spacing: .18em;
-  text-transform: uppercase; color: var(--corona); font-weight: 700; margin-bottom: 10px;
+  text-transform: uppercase; color: var(--corona); font-weight: 700; margin: 0;
+}
+.cd-head {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-bottom: 10px;
 }
 .countdown {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center;
@@ -246,12 +251,13 @@ h1 {
   border-left: 2px solid #fff; border-right: 2px solid #fff;
   border-radius: 3px; pointer-events: none;
 }
-.progress-marks { position: relative; height: 24px; margin-top: 6px; }
+.progress-marks { position: relative; height: 13px; margin-top: 5px; }
 .pmark {
   position: absolute; transform: translateX(-50%); text-align: center;
-  font-size: 8.5px; color: var(--txt-faint); letter-spacing: .04em; white-space: nowrap;
+  font-size: 9px; color: var(--txt-faint); letter-spacing: .02em; white-space: nowrap;
 }
-.pmark b { display: block; color: var(--txt-dim); font-size: 9px; font-weight: 700; }
+/* En una sola linea en vez de apiladas: la barra pasa de 24 px de alto a 13 */
+.pmark b { color: var(--txt-dim); font-size: 9px; font-weight: 700; margin-right: 3px; }
 .pmark.passed b { color: var(--corona); }
 
 /* ---------- Fases / timeline ---------- */
