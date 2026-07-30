@@ -13,7 +13,7 @@
     /* ================= CATALÀ ================= */
     ca: {
       'tab.now': 'Ara',
-      'dt.title': 'Detall del punt',
+      'dt.title': 'Cap a on hem de mirar des d’aquí?',
       'dt.toMax': 'Al màxim',
       'dt.isMax': 'màxim',
       'dt.sunAtLine': 'Sol a {alt}° · azimut {az}°',
@@ -188,7 +188,7 @@
     /* ================= CASTELLANO ================= */
     es: {
       'tab.now': 'Ahora',
-      'dt.title': 'Detalle del punto',
+      'dt.title': '¿Hacia dónde hay que mirar desde aquí?',
       'dt.toMax': 'Al máximo',
       'dt.isMax': 'máximo',
       'dt.sunAtLine': 'Sol a {alt}° · azimut {az}°',
@@ -363,7 +363,7 @@
     /* ================= ENGLISH ================= */
     en: {
       'tab.now': 'Now',
-      'dt.title': 'Point details',
+      'dt.title': 'Where do we look from here?',
       'dt.toMax': 'At maximum',
       'dt.isMax': 'maximum',
       'dt.sunAtLine': 'Sun at {alt}° · azimuth {az}°',
@@ -538,7 +538,7 @@
     /* ================= FRANÇAIS ================= */
     fr: {
       'tab.now': 'Maintenant',
-      'dt.title': 'Détail du point',
+      'dt.title': 'Vers où faut-il regarder d’ici ?',
       'dt.toMax': 'Au maximum',
       'dt.isMax': 'maximum',
       'dt.sunAtLine': 'Soleil à {alt}° · azimut {az}°',
@@ -713,7 +713,7 @@
     /* ================= DEUTSCH ================= */
     de: {
       'tab.now': 'Jetzt',
-      'dt.title': 'Standortdetails',
+      'dt.title': 'Wohin müssen wir von hier schauen?',
       'dt.toMax': 'Zum Maximum',
       'dt.isMax': 'Maximum',
       'dt.sunAtLine': 'Sonne bei {alt}° · Azimut {az}°',
