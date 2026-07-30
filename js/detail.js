@@ -208,15 +208,17 @@
     }).addTo(map);
 
     // La etiqueta de grados, a media línea, como en el visualizador oficial
-    // A media linea, no sobre el Sol: si no, la etiqueta le tapa el icono
-    const mid = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M * 0.48);
+    /* Solo el azimut, y a un tercio de la linea.
+       Con «286.08° · 186 m» la etiqueta medía siglo y medio de pixeles y, con
+       el Sol casi horizontal, acababa encima del icono. El alcance no se
+       pierde: sigue en la insignia de la esquina, junto a la altura. */
+    const mid = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M * 0.34);
     layers.label = L.marker([mid.lat, mid.lon], {
       interactive: false,
-      icon: L.divIcon({ className: '', iconSize: [80, 18], html:
-        `<div style="transform:translate(-50%,-150%);white-space:nowrap;` +
-        `background:rgba(0,0,0,.62);color:${SUN_COLOR};border-radius:6px;padding:2px 6px;` +
-        `font:700 11px -apple-system,sans-serif">` +
-        `${az.toFixed(2)}° · ${distLabel(CIRCLE_M)}</div>` })
+      icon: L.divIcon({ className: '', iconSize: [56, 18], html:
+        `<div style="transform:translate(-50%,-165%);white-space:nowrap;` +
+        `background:rgba(0,0,0,.68);color:${SUN_COLOR};border-radius:6px;padding:2px 6px;` +
+        `font:700 11px -apple-system,sans-serif">${az.toFixed(1)}°</div>` })
     }).addTo(map);
 
     layers.me = L.marker(here, {
