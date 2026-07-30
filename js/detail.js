@@ -234,7 +234,6 @@
     // que en el este peninsular es lo que pasa siempre.
     const endVisible = (set && set < lc.c4.date) ? set : lc.c4.date;
 
-    const place = placeCache[key(st)];
     const rows = [
       [T('dt.type'), isTotal ? T('dt.typeTotal') : T('dt.typePartial'), 'strong'],
       [T('dt.c1'), F.fmtTime(lc.c1.date)],
@@ -250,11 +249,7 @@
 
     const pct = (lc.obscuration * 100);
     panel.innerHTML =
-      `<div class="dt-loc">
-         <div class="dt-coords">${dms(st.lat, 'N', 'S')}, ${dms(st.lon, 'E', 'O')}</div>
-         <div class="dt-place">${place ? place : T('dt.locating')}</div>
-       </div>
-       <div class="dt-bar"><i style="width:${Math.min(100, pct).toFixed(2)}%"></i>
+      `<div class="dt-bar"><i style="width:${Math.min(100, pct).toFixed(2)}%"></i>
          <b>${pct.toFixed(2)} %</b></div>
        <div class="dt-rows">` +
       rows.map(r => `<div class="dt-row"><span>${r[0]}</span>` +
@@ -268,12 +263,37 @@
   async function loadPlace() {
     const st = App().state;
     const k = key(st);
-    if (placeCache[k] !== undefined) { render(); return; }
+    if (placeCache[k] !== undefined) { updateChip(); return; }
     placeCache[k] = null;
-    const p = await Geocode.reverse(st.lat, st.lon);
-    placeCache[k] = p ? [p.muni, p.province && p.province !== p.muni ? '(' + p.province + ')' : '',
-                        p.comunidadAutonoma].filter(Boolean).join(' ') : '';
-    render();
+    placeCache[k] = await Geocode.reverse(st.lat, st.lon);
+    updateChip();
+  }
+
+  /**
+   * El chip de arriba: etiqueta, municipio y coordenadas.
+   *
+   * Las coordenadas estaban repetidas —en el chip y otra vez bajo el mapa—, y
+   * en ninguno de los dos sitios salia el municipio, que es lo primero que
+   * quieres reconocer. Ahora van juntos y una sola vez.
+   *
+   * app.js escribe el chip en cada recompute; esto lo completa despues, cuando
+   * el geocodificador responde.
+   */
+  function updateChip() {
+    const el = $('locChip'), st = App() && App().state;
+    if (!el || !st) return;
+    const D = I18N.t('dir');
+    const coords = `${Math.abs(st.lat).toFixed(3)}°${st.lat >= 0 ? D[0] : D[8]} ` +
+                   `${Math.abs(st.lon).toFixed(3)}°${st.lon >= 0 ? D[4] : D[12]}`;
+    const p = placeCache[key(st)];
+    const parts = [];
+    if (st.label) parts.push(st.label);
+    // No repetir el municipio si la etiqueta ya lo dice (buscador, punt oficial)
+    if (p && p.muni && (st.label || '').toLowerCase().indexOf(p.muni.toLowerCase()) < 0) {
+      parts.push(p.muni);
+    }
+    parts.push(coords);
+    el.textContent = parts.join(' · ');
   }
 
   // ---------------------------------------------------------------------
@@ -528,6 +548,7 @@
     ensureMap();
     drawMarkers(true);
     drawChart();
+    updateChip();
     loadPlace();
   }
 

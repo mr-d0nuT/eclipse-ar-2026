@@ -634,9 +634,6 @@ footer { text-align: center; padding: 26px 0 0; }
   pointer-events: none;
 }
 .dt-panel { margin-top: 14px; }
-.dt-loc { margin-bottom: 10px; }
-.dt-coords { font-size: 15px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
-.dt-place { font-size: 12px; color: var(--txt-dim); margin-top: 2px; }
 .dt-bar {
   position: relative; height: 22px; border-radius: 999px; overflow: hidden;
   background: rgba(255,255,255,.07); margin-bottom: 12px;
