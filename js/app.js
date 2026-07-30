@@ -251,20 +251,22 @@
     const el = $('progMarks'); el.innerHTML = '';
     const lc = state.lc; if (!lc) return;
     const t0 = lc.c1.date.getTime(), t1 = lc.c4.date.getTime(), span = t1 - t0;
-    const marks = [['C1', lc.c1], ['MÁX', lc.max], ['C4', lc.c4]];
-    if (lc.c2) marks.splice(1, 0, ['C2', lc.c2]);
-    if (lc.c3) marks.splice(3, 0, ['C3', lc.c3]);
+    // Nombres en lenguaje llano, no las siglas de los contactos: «Inici» dice
+    // mas que «C1» a quien no se ha leido antes que significa cada una.
+    const marks = [['c1', lc.c1], ['max', lc.max], ['c4', lc.c4]];
+    if (lc.c2) marks.splice(1, 0, ['c2', lc.c2]);
+    if (lc.c3) marks.splice(3, 0, ['c3', lc.c3]);
 
     // Si la totalidad es corta, C2/MÁX/C3 se solapan: dejamos solo el máximo
     const pctOf = ev => ((ev.date.getTime() - t0) / span) * 100;
     const crowded = lc.c2 && lc.c3 && (pctOf(lc.c3) - pctOf(lc.c2)) < 9;
-    const visibles = crowded ? marks.filter(m => m[0] !== 'C2' && m[0] !== 'C3') : marks;
+    const visibles = crowded ? marks.filter(m => m[0] !== 'c2' && m[0] !== 'c3') : marks;
 
     for (const [n, ev] of visibles) {
       // Con la etiqueta y la hora al mismo cuerpo, las marcas son anchas: se
       // separan de los extremos para que no se salgan de la barra.
       const pos = Math.min(81, Math.max(19, pctOf(ev)));
-      const label = crowded && n === 'MÁX' ? T('mark.totality') : n;
+      const label = (crowded && n === 'max') ? T('mark.totality') : T('mark.' + n);
       el.insertAdjacentHTML('beforeend',
         `<div class="pmark" style="left:${pos}%" data-ts="${ev.date.getTime()}"><b>${label}</b>${fmtHM(ev.date)}</div>`);
     }

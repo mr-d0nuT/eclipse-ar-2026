@@ -217,7 +217,12 @@
       'v.c4': 'Fi de l\u2019eclipsi. Fins al 2 d\u2019agost del 2027.',
       'v.pMax': 'Màxim de l\u2019eclipsi. El {pct} per cent del Sol està tapat. No et treguis el filtre en cap moment.',
       'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'],
-      'mark.totality': 'TOTALITAT'
+      'mark.totality': 'Total',
+      'mark.c1': 'Inici',
+      'mark.c2': 'Total',
+      'mark.max': 'Màxim',
+      'mark.c3': 'Fi',
+      'mark.c4': 'Final'
     },
 
     /* ================= CASTELLANO ================= */
@@ -430,7 +435,12 @@
       'v.c4': 'Fin del eclipse. Hasta el 2 de agosto de 2027.',
       'v.pMax': 'Máximo del eclipse. El {pct} por ciento del Sol está tapado. No te quites el filtro en ningún momento.',
       'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'],
-      'mark.totality': 'TOTALIDAD'
+      'mark.totality': 'Total',
+      'mark.c1': 'Inicio',
+      'mark.c2': 'Total',
+      'mark.max': 'Máximo',
+      'mark.c3': 'Fin',
+      'mark.c4': 'Final'
     },
 
     /* ================= ENGLISH ================= */
@@ -643,7 +653,12 @@
       'v.c4': 'The eclipse is over. See you on the second of August, 2027.',
       'v.pMax': 'Maximum eclipse. {pct} per cent of the Sun is covered. Do not remove your filter at any point.',
       'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'],
-      'mark.totality': 'TOTALITY'
+      'mark.totality': 'Total',
+      'mark.c1': 'Start',
+      'mark.c2': 'Total',
+      'mark.max': 'Max',
+      'mark.c3': 'End',
+      'mark.c4': 'Finish'
     },
 
     /* ================= FRANÇAIS ================= */
@@ -856,7 +871,12 @@
       'v.c4': 'Fin de l\u2019éclipse. Rendez-vous le 2 août 2027.',
       'v.pMax': 'Maximum de l\u2019éclipse. {pct} pour cent du Soleil est couvert. Ne retirez le filtre à aucun moment.',
       'dir': ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'],
-      'mark.totality': 'TOTALITÉ'
+      'mark.totality': 'Total',
+      'mark.c1': 'Début',
+      'mark.c2': 'Total',
+      'mark.max': 'Max',
+      'mark.c3': 'Fin',
+      'mark.c4': 'Final'
     },
 
     /* ================= DEUTSCH ================= */
@@ -1069,7 +1089,12 @@
       'v.c4': 'Ende der Finsternis. Bis zum 2. August 2027.',
       'v.pMax': 'Maximum der Finsternis. {pct} Prozent der Sonne sind bedeckt. Nimm den Filter zu keinem Zeitpunkt ab.',
       'dir': ['N','NNO','NO','ONO','O','OSO','SO','SSO','S','SSW','SW','WSW','W','WNW','NW','NNW'],
-      'mark.totality': 'TOTALITÄT'
+      'mark.totality': 'Total',
+      'mark.c1': 'Beginn',
+      'mark.c2': 'Total',
+      'mark.max': 'Max',
+      'mark.c3': 'Ende',
+      'mark.c4': 'Schluss'
     }
   };
 

@@ -666,8 +666,13 @@ footer { text-align: center; padding: 26px 0 0; }
   border-bottom: 1px solid rgba(255,255,255,.055);
 }
 .dt-row:last-child { border-bottom: 0; }
-.dt-row b { color: var(--txt); font-variant-numeric: tabular-nums; font-weight: 600; }
-.dt-row b.strong { color: var(--corona); font-weight: 800; }
+/* Las horas son el dato, no el rotulo: van a cuerpo mayor para que se lean
+   de un vistazo sin tener que acercarse a la pantalla. */
+.dt-row b {
+  color: var(--txt); font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: 16px; letter-spacing: -.01em;
+}
+.dt-row b.strong { color: var(--corona); font-weight: 800; font-size: 17px; }
 .dt-vis { margin-top: 16px; border-top: 1px solid var(--panel-brd); padding-top: 14px; }
 .dt-h {
   font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
