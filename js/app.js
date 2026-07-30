@@ -342,6 +342,33 @@
   }
 
   /** Texto del resumen: dónde estás, qué verás, a qué hora y hacia dónde */
+  /**
+   * Direcciones DICHAS, no en siglas. `cardinal()` devuelve «ONO», y el
+   * sintetizador lo lee «o-ene-o», que no le sirve a nadie y menos a quien no
+   * ha oído nunca hablar de azimuts.
+   */
+  function spokenDir(az) {
+    const names = I18N.t('v.dirSpoken');
+    return names[Math.round(az / 22.5) % 16];
+  }
+
+  /**
+   * La altura del Sol, en dedos.
+   * «Cuatro grados» no le dice nada a casi nadie. Con el brazo estirado, un
+   * dedo tapa metro y medio de cielo y el puño cerrado unos diez grados: eso
+   * sí se entiende y se puede comprobar sin instrumentos.
+   */
+  function spokenHeight(alt) {
+    if (alt >= 8) return T('v.briefFist');
+    const fingers = Math.max(1, Math.round(alt / 1.5));
+    return T(fingers === 1 ? 'v.briefFinger1' : 'v.briefFingers', { n: fingers });
+  }
+
+  /** Lo que los paneles hayan podido averiguar: relieve y nubes */
+  function knownFacts() {
+    try { return (window.Panels && Panels.facts()) || {}; } catch (e) { return {}; }
+  }
+
   function briefingText() {
     const lc = state.lc;
     if (!lc) return T('cd.notVisible');
@@ -357,12 +384,55 @@
     } else {
       parts.push(T('v.briefPartial', { pct: pctCovered(lc) }));
     }
-    parts.push(T('v.briefTimes', { c1: fmtHM(lc.c1.date), c4: fmtHM(lc.c4.date) }));
+    /* El eclipse acaba a las 21:21 pero en media península el Sol se pone
+       antes: decir solo «termina a las 21:21» es cierto y a la vez engañoso.
+       Se dan las dos horas y se explica cuál manda. */
+    const set = Astro.sunRiseSet(lc.max.date, state.lat, state.lon).set;
+    if (set && set < lc.c4.date) {
+      parts.push(T('v.briefTimesSet', {
+        c1: fmtHM(lc.c1.date), c4: fmtHM(lc.c4.date), set: fmtHM(set)
+      }));
+    } else {
+      parts.push(T('v.briefTimes', { c1: fmtHM(lc.c1.date), c4: fmtHM(lc.c4.date) }));
+    }
     parts.push(T('v.briefSun', {
       alt: lc.max.altRefracted.toFixed(0),
-      dir: cardinal(lc.max.az)
+      dir: spokenDir(lc.max.az),
+      hand: spokenHeight(lc.max.altRefracted)
     }));
-    if (lc.max.altRefracted < 8) parts.push(T('v.briefLow'));
+    /* EL RELIEVE, que es lo que decide de verdad si lo ves.
+       Con el Sol a cuatro grados, un cerro cualquiera te lo tapa, y eso no se
+       adivina mirando el cielo hoy. Si lo sabemos, se dice; y si no hay nada
+       delante, tambien, que tranquiliza. */
+    const f = knownFacts();
+    if (f.analysis) {
+      const an = f.analysis;
+      /* Un horizonte llano SIEMPRE «tapa» el Sol unos minutos antes de que se
+         ponga: a menos de un grado eso no es relieve, es el propio horizonte.
+         Avisar de eso en voz alta seria alarmar por nada, y quien recibe
+         alarmas por nada deja de hacer caso a las de verdad. */
+      const real = an.blocked && an.horizonAtMax >= 1 &&
+                   (!set || (set - an.blocked.date) > 3 * 60000);
+      if (real) {
+        // No es lo mismo perderse la totalidad que perderse el final
+        const antesDeLaTotalitat = lc.c3 ? an.blocked.date < lc.c3.date : an.blocked.date < lc.max.date;
+        parts.push(T(antesDeLaTotalitat ? 'v.briefBlocked' : 'v.briefBlockedLate',
+                     { time: fmtHM(an.blocked.date) }));
+      } else if (an.margin > 0.5) {
+        parts.push(T('v.briefClear'));
+      }
+    }
+    /* «Molt baix, necessites l'horitzo net» solo si NO sabemos el relieve. Si
+       lo sabemos, la frase de arriba ya dice si te tapa y a que hora, que es
+       lo mismo pero concreto; repetirlo suena a sermon. */
+    if (!f.analysis && lc.max.altRefracted < 8) parts.push(T('v.briefLow'));
+
+    if (f.summary && f.summary.atMax && f.summary.atMax.low != null) {
+      const low = f.summary.atMax.low;
+      parts.push(low >= 40 ? T('v.briefCloudsBad', { low })
+               : low >= 15 ? T('v.briefCloudsSome', { low })
+                           : T('v.briefCloudsGood'));
+    }
     // Donde no hay totalidad, el filtro NO se quita nunca. Decir «salvo durante
     // la totalidad» allí sería una invitación a quemarse la retina.
     parts.push(T(isTotal ? 'v.briefFilter' : 'v.briefFilterAlways'));
@@ -391,8 +461,9 @@
   function pctCovered(lc) {
     if (lc.type === 'total') return '100';
     let s = Math.min(lc.obscuration * 100, 99.9).toFixed(1).replace(/\.0$/, '');
-    // Separador decimal correcto o el sintetizador lee «punto» en castellano
-    if (I18N.lang !== 'en') s = s.replace('.', ',');
+    // Separador decimal correcto o el sintetizador lee «punto» en castellano.
+    // El inglés, el chino y el árabe (con cifras latinas) usan el punto.
+    if (['en', 'zh', 'ar'].indexOf(I18N.lang) < 0) s = s.replace('.', ',');
     return s;
   }
 
@@ -402,13 +473,38 @@
     es: { d: ['día', 'días'], h: ['hora', 'horas'], m: ['minuto', 'minutos'], s: ['segundo', 'segundos'], and: ' y ' },
     en: { d: ['day', 'days'], h: ['hour', 'hours'], m: ['minute', 'minutes'], s: ['second', 'seconds'], and: ' and ' },
     fr: { d: ['jour', 'jours'], h: ['heure', 'heures'], m: ['minute', 'minutes'], s: ['seconde', 'secondes'], and: ' et ' },
-    de: { d: ['Tag', 'Tage'], h: ['Stunde', 'Stunden'], m: ['Minute', 'Minuten'], s: ['Sekunde', 'Sekunden'], and: ' und ' }
+    de: { d: ['Tag', 'Tage'], h: ['Stunde', 'Stunden'], m: ['Minute', 'Minuten'], s: ['Sekunde', 'Sekunden'], and: ' und ' },
+    // El chino no declina ni encadena con conjunción: «24天3小时12分钟»
+    zh: { d: ['天', '天'], h: ['小时', '小时'], m: ['分钟', '分钟'], s: ['秒', '秒'],
+          and: '', sep: '', gap: '' },
+    /* El árabe tiene cuatro formas según la cantidad: uno, dos (dual), de tres
+       a diez, y once o más, que vuelve al singular acusativo. Sin esto, la voz
+       diría «11 أيام», que a un oído árabe le suena como «11 childrens». */
+    ar: { d: ['يوم', 'يومان', 'أيام', 'يوماً'],
+          h: ['ساعة', 'ساعتان', 'ساعات', 'ساعة'],
+          m: ['دقيقة', 'دقيقتان', 'دقائق', 'دقيقة'],
+          s: ['ثانية', 'ثانيتان', 'ثوانٍ', 'ثانية'],
+          and: ' و', sep: '، ', form: arabicForm }
   };
 
+  /** Forma del sustantivo árabe según el número que lo precede */
+  function arabicForm(n, forms) {
+    if (n === 1) return forms[0];
+    if (n === 2) return forms[1];
+    if (n <= 10) return forms[2];
+    return forms[3];
+  }
+
+  /** «3» + «minuto/minutos» en el idioma activo */
+  function unit(n, forms, U) {
+    const word = U.form ? U.form(n, forms) : forms[n === 1 ? 0 : 1];
+    return n + (U.gap != null ? U.gap : ' ') + word;
+  }
+
   /** Une una lista en lenguaje natural: «24 dies, 3 hores i 12 minuts» */
-  function joinSpoken(items, and) {
+  function joinSpoken(items, and, sep) {
     if (items.length <= 1) return items.join('');
-    return items.slice(0, -1).join(', ') + and + items[items.length - 1];
+    return items.slice(0, -1).join(sep != null ? sep : ', ') + and + items[items.length - 1];
   }
 
   /** «1m 48s» -> algo que una voz pueda leer con naturalidad */
@@ -417,9 +513,9 @@
     const U = UNITS[I18N.lang] || UNITS.es;
     const m = Math.floor(sec / 60), s = sec % 60;
     const out = [];
-    if (m) out.push(m + ' ' + U.m[m === 1 ? 0 : 1]);
-    if (s) out.push(s + ' ' + U.s[s === 1 ? 0 : 1]);
-    return joinSpoken(out, U.and) || '0 ' + U.s[1];
+    if (m) out.push(unit(m, U.m, U));
+    if (s) out.push(unit(s, U.s, U));
+    return joinSpoken(out, U.and, U.sep) || unit(0, U.s, U);
   }
 
   /** Cuenta atrás completa hablada: días, horas, minutos y segundos */
@@ -430,12 +526,12 @@
     const h = Math.floor(sec / 3600);  sec -= h * 3600;
     const m = Math.floor(sec / 60);    sec -= m * 60;
     const out = [];
-    if (d) out.push(d + ' ' + U.d[d === 1 ? 0 : 1]);
-    if (h) out.push(h + ' ' + U.h[h === 1 ? 0 : 1]);
-    if (m) out.push(m + ' ' + U.m[m === 1 ? 0 : 1]);
+    if (d) out.push(unit(d, U.d, U));
+    if (h) out.push(unit(h, U.h, U));
+    if (m) out.push(unit(m, U.m, U));
     // Los segundos solo cuando quedan pocos días: «24 días y 13 segundos» chirría
-    if (sec && d === 0) out.push(sec + ' ' + U.s[sec === 1 ? 0 : 1]);
-    return joinSpoken(out, U.and) || '0 ' + U.s[1];
+    if (sec && d === 0) out.push(unit(sec, U.s, U));
+    return joinSpoken(out, U.and, U.sep) || unit(0, U.s, U);
   }
 
   /** Saludo al abrir la app: cuánto falta, dicho en voz alta */

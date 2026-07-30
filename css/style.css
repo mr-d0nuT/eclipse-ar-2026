@@ -803,3 +803,44 @@ header.hero { padding: 6px 0 10px; }
 #cdCard { padding: 9px 18px 8px; margin-bottom: 8px; }
 #cdCard .progress-shell { margin-bottom: 0; }
 #cdCard .progress-marks { height: 16px; margin-top: 6px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ÁRABE: DE DERECHA A IZQUIERDA
+
+   El atributo dir="rtl" del <html> ya voltea texto, filas y listas solo.
+   Aquí únicamente se arregla lo que el volteo automático estropea:
+   lo que es geometría (mapa, gráficas) y los pocos márgenes y posiciones
+   que están escritos a mano en un lado concreto.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Mapas y gráficas son geografía, no texto: el norte sigue arriba y el
+   oeste a la izquierda, se lea el idioma que se lea. */
+[dir="rtl"] #map,
+[dir="rtl"] .leaflet-container,
+[dir="rtl"] .hz-wrap,
+[dir="rtl"] .hz-wrap svg,
+[dir="rtl"] .dt-scrub input[type=range],
+[dir="rtl"] svg { direction: ltr; }
+
+/* El interruptor de la voz: el botón se desliza hacia el otro lado */
+[dir="rtl"] .tool-sw::after { left: auto; right: 3px; }
+[dir="rtl"] .tool-hero.on .tool-sw::after { left: auto; right: 19px; }
+
+/* Márgenes escritos a un lado concreto */
+[dir="rtl"] .map-legend i,
+[dir="rtl"] .hz-legend i,
+[dir="rtl"] .pmark b { margin-right: 0; margin-left: 5px; }
+[dir="rtl"] .pl-ele { margin-left: 0; margin-right: 4px; }
+[dir="rtl"] .geo-dot { margin-left: 0; margin-right: 2px; }
+[dir="rtl"] .dt-scrub-row .city-btn { margin-left: 0; margin-right: auto; }
+
+/* Horas, grados y cifras: deben leerse enteras, sin que el algoritmo
+   bidireccional parta un «20:29» o le dé la vuelta a un «41.132».
+   Las coordenadas del chip NO se tocan: ahí el orden árabe (latitud a la
+   derecha) ya es el correcto y forzarlas a LTR las estropearía. */
+[dir="rtl"] .dt-row b,
+[dir="rtl"] .pmark b,
+[dir="rtl"] .cd-num { direction: ltr; unicode-bidi: isolate; }
+
+/* La barra de idiomas conserva el orden en que están escritas las banderas */
+[dir="rtl"] .langbar { direction: ltr; }

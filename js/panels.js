@@ -833,6 +833,32 @@
   try { saved = localStorage.getItem('eclipse-tab') || 'now'; } catch (e) {}
   setTab(saved);
 
-  global.Panels = { refresh, setTab, renderVerdict, drawHorizonChart };
+  /* Lo que se ha podido averiguar del punto actual. Lo usa la narracion
+     hablada de app.js para poder decir a que hora se esconde el Sol tras el
+     relieve y que nubes se esperan. */
+  function facts() { return { analysis: data.analysis, summary: data.summary }; }
+
+  /**
+   * Cambio de idioma: repintar TODO lo que ya está en memoria, sin pedir nada
+   * a la red. Hasta ahora solo se retraducía la pestaña «Ara», así que la lista
+   * de puntos oficiales y el veredicto se quedaban en el idioma anterior.
+   * Ni un byte de cuota: los datos ya los tenemos, solo cambian las palabras.
+   */
+  function relang() {
+    renderVerdict();
+    renderHorizon();
+    renderWeather();
+    renderClima();
+    renderPlan();
+    refreshNearby();
+    if (planState.results) {
+      const status = $('plStatus');
+      if (status) status.innerHTML = T('pl.official', { n: planState.results.length });
+    }
+    if (global.Detail) Detail.refresh();
+  }
+  if (global.I18N) I18N.onChange(relang);
+
+  global.Panels = { refresh, setTab, renderVerdict, drawHorizonChart, facts, relang };
   refresh();
 })(window);

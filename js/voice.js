@@ -69,7 +69,11 @@
       es: ['es-ES', 'es-MX', 'es-US', 'es'],
       en: ['en-GB', 'en-US', 'en'],
       fr: ['fr-FR', 'fr-CA', 'fr'],
-      de: ['de-DE', 'de-AT', 'de-CH', 'de']
+      de: ['de-DE', 'de-AT', 'de-CH', 'de'],
+      zh: ['zh-CN', 'zh-TW', 'zh-HK', 'zh'],
+      // Marruecos primero: es la variante más probable entre quienes hablan
+      // árabe en Catalunya, y la que mejor entienden si el móvil la trae.
+      ar: ['ar-MA', 'ar-SA', 'ar-EG', 'ar-001', 'ar']
     };
     return M[lang] || M.es;
   }
@@ -82,7 +86,11 @@
     V.fallbackLang = null;
     // Probamos el idioma pedido y, si no hay ninguna voz, degradamos:
     // el catalán es el que más papeletas tiene de faltar en Android.
-    const chain = lang === 'ca' ? ['ca', 'es'] : [lang];
+    /* Si no hay voz del idioma pedido se degrada a otra: el catalán falta a
+       menudo en Android, y el chino y el árabe faltan casi siempre en los
+       móviles vendidos aquí. Mejor una voz castellana leyendo mal que silencio. */
+    const FALLBACK = { ca: ['ca', 'es'], zh: ['zh', 'en', 'es'], ar: ['ar', 'en', 'es'] };
+    const chain = FALLBACK[lang] || [lang];
 
     for (const L of chain) {
       let best = null, bestScore = -999;
