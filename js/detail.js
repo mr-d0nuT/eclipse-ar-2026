@@ -225,6 +225,19 @@
        tu mirando, y con el circulo y la linea alrededor deja claro de un
        vistazo hacia donde. Los pies quedan en la coordenada exacta, como en
        cualquier chincheta. */
+    /* El alcance del circulo, escrito sobre la propia circunferencia.
+       Estaba solo en la insignia de la esquina, junto a otros dos numeros y
+       sin rotulo: nadie adivina cual de los tres es el radio. Al sur, que en
+       este eclipse siempre esta libre —el Sol cae al oeste-noroeste—. */
+    const sc = Horizon.destPoint(st.lat, st.lon, 180, CIRCLE_M);
+    layers.scale = L.marker([sc.lat, sc.lon], {
+      interactive: false,
+      icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [70, 18], html:
+        `<div style="transform:translate(-50%,-50%);white-space:nowrap;` +
+        `background:rgba(0,0,0,.68);color:${SUN_COLOR};border-radius:6px;padding:2px 7px;` +
+        `font:700 10.5px -apple-system,sans-serif">⌀ ${distLabel(CIRCLE_M)}</div>` })
+    }).addTo(map);
+
     layers.me = L.marker(here, {
       interactive: false, zIndexOffset: 1000,
       icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [26, 30], html:
@@ -249,7 +262,7 @@
     if (recenter) map.panTo(here, { animate: false });
 
     const badge = $('dtAz');
-    if (badge) badge.textContent = `${az.toFixed(2)}° · ${alt.toFixed(2)}° · ${distLabel(CIRCLE_M)}`;
+    if (badge) badge.innerHTML = T('dt.badge', { az: az.toFixed(2), alt: alt.toFixed(2) });
   }
 
   // ---------------------------------------------------------------------

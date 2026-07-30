@@ -11,7 +11,7 @@
 
   --txt:           #eef1f8;
   --txt-dim:       #9aa3bd;
-  --txt-faint:     #626b85;
+  --txt-faint:     #868fa8;
 
   --corona:        #ffd27d;
   --corona-hot:    #ffab3d;
@@ -251,7 +251,7 @@ h1 {
   border-left: 2px solid #fff; border-right: 2px solid #fff;
   border-radius: 3px; pointer-events: none;
 }
-.progress-marks { position: relative; height: 18px; margin-top: 7px; }
+.progress-marks { position: relative; height: 19px; margin-top: 7px; }
 .pmark {
   position: absolute; transform: translateX(-50%); text-align: center;
   /* Las HORAS son el dato que se busca de un vistazo: grandes y en cian, que
@@ -261,8 +261,8 @@ h1 {
   white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .pmark b {
-  color: var(--txt-faint); font-size: 8.5px; font-weight: 700;
-  letter-spacing: .08em; margin-right: 4px;
+  color: var(--txt-dim); font-size: 12.5px; font-weight: 700;
+  letter-spacing: 0; margin-right: 5px;
 }
 .pmark.passed b { color: var(--corona); }
 
@@ -780,3 +780,9 @@ header.hero { padding: 6px 0 10px; }
    a la línea roja, que es la que dice hacia dónde mirar. */
 .dt-ring { animation: dtRing 2s ease-in-out infinite; }
 @keyframes dtRing { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* En pantallas estrechas «TOTALITAT 20:29» y «C4 21:21» llegan a tocarse:
+   un punto menos de cuerpo y vuelven a respirar. */
+@media (max-width: 360px) {
+  .pmark, .pmark b { font-size: 11px; }
+}

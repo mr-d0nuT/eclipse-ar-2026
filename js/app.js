@@ -261,9 +261,9 @@
     const visibles = crowded ? marks.filter(m => m[0] !== 'C2' && m[0] !== 'C3') : marks;
 
     for (const [n, ev] of visibles) {
-      // Con la hora en cuerpo grande las marcas son aun mas anchas: se
-      // separan mas de los extremos para que no se salgan de la barra.
-      const pos = Math.min(84, Math.max(16, pctOf(ev)));
+      // Con la etiqueta y la hora al mismo cuerpo, las marcas son anchas: se
+      // separan de los extremos para que no se salgan de la barra.
+      const pos = Math.min(81, Math.max(19, pctOf(ev)));
       const label = crowded && n === 'MÁX' ? T('mark.totality') : n;
       el.insertAdjacentHTML('beforeend',
         `<div class="pmark" style="left:${pos}%" data-ts="${ev.date.getTime()}"><b>${label}</b>${fmtHM(ev.date)}</div>`);
