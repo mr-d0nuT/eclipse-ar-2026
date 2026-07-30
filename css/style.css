@@ -791,3 +791,10 @@ header.hero { padding: 6px 0 10px; }
 @media (max-width: 360px) {
   .pmark, .pmark b { font-size: 11px; }
 }
+
+/* La barra de Inici/Total/Final es lo último de la tarjeta: sin nada debajo,
+   el relleno inferior de 18 px y el alto sobrante del contenedor de marcas
+   dejaban un hueco muerto de casi medio centímetro. */
+#cdCard { padding-bottom: 8px; }
+#cdCard .progress-shell { margin-bottom: 0; }
+#cdCard .progress-marks { height: 16px; margin-top: 6px; }
