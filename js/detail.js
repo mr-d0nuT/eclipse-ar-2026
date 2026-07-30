@@ -121,7 +121,7 @@
       pressAt = e.latlng;
       pressRing = L.marker(e.latlng, {
         interactive: false,
-        icon: L.divIcon({ className: '', iconSize: [54, 54],
+        icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [54, 54],
           html: '<div class="dt-press"></div>' })
       }).addTo(map);
 
@@ -184,7 +184,7 @@
     const n = Horizon.destPoint(st.lat, st.lon, 0, CIRCLE_M);
     layers.north = L.marker([n.lat, n.lon], {
       interactive: false,
-      icon: L.divIcon({ className: '', iconSize: [16, 16], html:
+      icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [16, 16], html:
         '<div style="transform:translate(-50%,-50%);color:#fff;font:800 12px -apple-system,sans-serif;' +
         'text-shadow:0 0 3px #000,0 0 6px #000">N</div>' })
     }).addTo(map);
@@ -202,7 +202,7 @@
 
     layers.sun = L.marker([s.lat, s.lon], {
       interactive: false,
-      icon: L.divIcon({ className: '', iconSize: [32, 32], html:
+      icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [32, 32], html:
         '<div style="transform:translate(-50%,-50%);font-size:26px;line-height:1;' +
         'filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 7px rgba(0,0,0,.95))">☀️</div>' })
     }).addTo(map);
@@ -215,17 +215,31 @@
     const mid = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M * 0.34);
     layers.label = L.marker([mid.lat, mid.lon], {
       interactive: false,
-      icon: L.divIcon({ className: '', iconSize: [56, 18], html:
+      icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [56, 18], html:
         `<div style="transform:translate(-50%,-165%);white-space:nowrap;` +
         `background:rgba(0,0,0,.68);color:${SUN_COLOR};border-radius:6px;padding:2px 6px;` +
         `font:700 11px -apple-system,sans-serif">${az.toFixed(1)}°</div>` })
     }).addTo(map);
 
+    /* Una figurita en vez de un punto: se entiende sin leyenda que ahi estas
+       tu mirando, y con el circulo y la linea alrededor deja claro de un
+       vistazo hacia donde. Los pies quedan en la coordenada exacta, como en
+       cualquier chincheta. */
     layers.me = L.marker(here, {
-      interactive: false,
-      icon: L.divIcon({ className: '', iconSize: [22, 22], html:
-        '<div style="transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;' +
-        'background:#4fd6ff;border:3px solid #fff;box-shadow:0 0 8px rgba(0,0,0,.8)"></div>' })
+      interactive: false, zIndexOffset: 1000,
+      icon: L.divIcon({ className: '', iconAnchor: [0, 0], iconSize: [26, 30], html:
+        /* El icono, centrado en la coordenada. Se probo a anclarlo por la
+           cabeza para que el rayo saliera de los ojos, pero eso empuja la
+           figura hacia abajo y da a entender que estas mas bajo de donde
+           estas. Centrado, el rayo sale del medio de la figura y la posicion
+           se lee sin ambigüedad. */
+        '<svg viewBox="0 0 24 28" width="26" height="30" ' +
+        'style="transform:translate(-50%,-50%);display:block;' +
+        'filter:drop-shadow(0 0 2px #000) drop-shadow(0 1px 4px rgba(0,0,0,.9))">' +
+        '<circle cx="12" cy="5" r="4" fill="#4fd6ff" stroke="#fff" stroke-width="1.6"/>' +
+        '<path d="M12 10c-3.2 0-5.2 1.9-5.2 4.6v4.1h2.2l.7 8.3h4.6l.7-8.3h2.2v-4.1C17.2 11.9 15.2 10 12 10z" ' +
+        'fill="#4fd6ff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>' +
+        '</svg>' })
     }).addTo(map);
 
     /* Solo se recentra cuando cambia la ubicación, y SIN tocar el zoom. Antes
