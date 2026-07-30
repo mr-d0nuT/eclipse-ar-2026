@@ -117,7 +117,7 @@ h1 {
      se quedaba solo en una linea de arriba. Ahora el chip crece hacia abajo
      y el punto se mantiene a su lado. */
   display: flex; gap: 8px; align-items: center; justify-content: center;
-  flex-wrap: nowrap; margin: 0 0 14px;
+  flex-wrap: nowrap; margin: 0 0 8px;
 }
 .locbar .chip { white-space: normal; text-align: center; min-width: 0; }
 .chip {
@@ -662,7 +662,9 @@ footer { text-align: center; padding: 26px 0 0; }
 .dt-rows { display: flex; flex-direction: column; }
 .dt-row {
   display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-  padding: 9px 2px; font-size: 13px; color: var(--txt-dim);
+  /* Diez filas: cada pixel de relleno son diez de tarjeta. Con las horas ya
+     a 16 px, el aire de mas solo servia para alargar el desplazamiento. */
+  padding: 4px 2px; font-size: 13px; color: var(--txt-dim);
   border-bottom: 1px solid rgba(255,255,255,.055);
 }
 .dt-row:last-child { border-bottom: 0; }
@@ -754,7 +756,6 @@ footer { text-align: center; padding: 26px 0 0; }
 
 /* Sin subtítulo, el titular respira un poco menos */
 header.hero { padding: 6px 0 10px; }
-.locbar { margin-top: 2px; }
 
 /* ---------- Botón de información en las cabeceras ---------- */
 .info-btn {
@@ -795,6 +796,10 @@ header.hero { padding: 6px 0 10px; }
 /* La barra de Inici/Total/Final es lo último de la tarjeta: sin nada debajo,
    el relleno inferior de 18 px y el alto sobrante del contenedor de marcas
    dejaban un hueco muerto de casi medio centímetro. */
-#cdCard { padding-bottom: 8px; }
+/* Y arriba lo mismo: la etiqueta es lo primero de la tarjeta y no necesita
+   los 18 px de relleno completos por encima. */
+/* Y arriba lo mismo. El margen inferior tambien baja: entre la cuenta atras
+   y el chip de ubicacion habia 16 px de nada. */
+#cdCard { padding: 9px 18px 8px; margin-bottom: 8px; }
 #cdCard .progress-shell { margin-bottom: 0; }
 #cdCard .progress-marks { height: 16px; margin-top: 6px; }
