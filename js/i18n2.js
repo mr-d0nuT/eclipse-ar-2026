@@ -13,6 +13,8 @@
     /* ================= CATALÀ ================= */
     ca: {
       'tab.now': 'Ara',
+      'ar.terrain': 'Relleu <b>{hz}°</b> · marge <b>{m}°</b>',
+      'ar.hidesAt': '⛰ El Sol es fica darrere del relleu a les {time}. La línia vermella és el perfil del terreny.',
       'dt.title': 'Cap a on hem de mirar des d’aquí?',
       'dt.toMax': 'Al màxim',
       'dt.isMax': 'màxim',
@@ -188,6 +190,8 @@
     /* ================= CASTELLANO ================= */
     es: {
       'tab.now': 'Ahora',
+      'ar.terrain': 'Relieve <b>{hz}°</b> · margen <b>{m}°</b>',
+      'ar.hidesAt': '⛰ El Sol se mete detrás del relieve a las {time}. La línea roja es el perfil del terreno.',
       'dt.title': '¿Hacia dónde hay que mirar desde aquí?',
       'dt.toMax': 'Al máximo',
       'dt.isMax': 'máximo',
@@ -363,6 +367,8 @@
     /* ================= ENGLISH ================= */
     en: {
       'tab.now': 'Now',
+      'ar.terrain': 'Terrain <b>{hz}°</b> · margin <b>{m}°</b>',
+      'ar.hidesAt': '⛰ The Sun drops behind the terrain at {time}. The red line is the ground profile.',
       'dt.title': 'Where do we look from here?',
       'dt.toMax': 'At maximum',
       'dt.isMax': 'maximum',
@@ -538,6 +544,8 @@
     /* ================= FRANÇAIS ================= */
     fr: {
       'tab.now': 'Maintenant',
+      'ar.terrain': 'Relief <b>{hz}°</b> · marge <b>{m}°</b>',
+      'ar.hidesAt': '⛰ Le Soleil passe derrière le relief à {time}. La ligne rouge est le profil du terrain.',
       'dt.title': 'Vers où faut-il regarder d’ici ?',
       'dt.toMax': 'Au maximum',
       'dt.isMax': 'maximum',
@@ -713,6 +721,8 @@
     /* ================= DEUTSCH ================= */
     de: {
       'tab.now': 'Jetzt',
+      'ar.terrain': 'Gelände <b>{hz}°</b> · Spielraum <b>{m}°</b>',
+      'ar.hidesAt': '⛰ Die Sonne verschwindet um {time} hinter dem Gelände. Die rote Linie ist das Geländeprofil.',
       'dt.title': 'Wohin müssen wir von hier schauen?',
       'dt.toMax': 'Zum Maximum',
       'dt.isMax': 'Maximum',

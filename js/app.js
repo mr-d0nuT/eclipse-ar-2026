@@ -104,7 +104,11 @@
   function recompute() {
     state.lc = Eclipse.localCircumstances(state.lat, state.lon, state.height);
     const DIRS = I18N.t('dir');            // 0=N 4=E 8=S 12=O/W, según idioma
-    $('locChip').textContent = `${state.label} · ${Math.abs(state.lat).toFixed(3)}°${state.lat >= 0 ? DIRS[0] : DIRS[8]} ${Math.abs(state.lon).toFixed(3)}°${state.lon >= 0 ? DIRS[4] : DIRS[12]}`;
+    // Dos lineas: el sitio arriba y las coordenadas debajo. detail.js lo
+    // completa con el municipio cuando responde el geocodificador.
+    $('locChip').innerHTML =
+      `<b>${state.label}</b><small>${Math.abs(state.lat).toFixed(3)}°${state.lat >= 0 ? DIRS[0] : DIRS[8]} ` +
+      `${Math.abs(state.lon).toFixed(3)}°${state.lon >= 0 ? DIRS[4] : DIRS[12]}</small>`;
     renderAlerts();
     renderPhases();
     renderStats();

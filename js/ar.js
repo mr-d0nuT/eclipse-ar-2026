@@ -329,7 +329,9 @@
   // ---------------------------------------------------------------------
   const cache = {
     key: null,
-    horizon: [],      // vectores del horizonte
+    horizon: [],      // vectores del horizonte geométrico (mar en calma)
+    terrain: [],      // silueta del relieve real, si se ha descargado
+    block: null,      // dónde y cuándo se lo traga el terreno
     ticks: [],        // {vec, label, big}
     track: [],        // trayectoria del Sol durante el eclipse
     marks: [],        // {label, vec}
@@ -345,7 +347,10 @@
   function buildSky(app) {
     // El idioma entra en la clave: las etiquetas de la rosa de los vientos y
     // los hitos horarios cambian con él.
-    const key = app.lat.toFixed(5) + ',' + app.lon.toFixed(5) + ',' + I18N.lang;
+    /* El perfil del relieve entra en la clave: si se descarga con el AR ya
+       abierto, la escena tiene que rehacerse para que aparezca. */
+    const prof = (typeof Horizon !== 'undefined') ? Horizon.cachedProfile(app.lat, app.lon) : null;
+    const key = app.lat.toFixed(5) + ',' + app.lon.toFixed(5) + ',' + I18N.lang + ',' + (prof ? 1 : 0);
     if (cache.key === key) return;
     cache.key = key;
 
@@ -368,6 +373,31 @@
         const s = Astro.sunAltAz(d, app.lat, app.lon);
         cache.track.push(skyVector(s.az, s.altRefracted));
       }
+      /* SILUETA DEL RELIEVE.
+         Es lo que el modo AR no podia enseñar: la camara te da lo que hay
+         delante, pero de noche o con niebla no se distingue el monte, y de dia
+         no sabes a que altura angular esta. Dibujando el perfil calculado
+         encima ves de un vistazo si el Sol pasara por encima o por detras. */
+      cache.terrain = [];
+      cache.block = null;
+      if (prof) {
+        const fan = Horizon.fanOf(prof);
+        for (let az = fan.from; az <= fan.to; az += 0.5) {
+          cache.terrain.push(skyVector(az, Horizon.horizonAt(prof, az)));
+        }
+        const an = Horizon.analyse(prof, lc, app.lat, app.lon);
+        if (an && an.blocked) {
+          cache.block = {
+            vec: skyVector(an.blocked.az, an.blocked.alt),
+            label: an.blocked.date.toLocaleTimeString(I18N.locale, { hour: '2-digit', minute: '2-digit' })
+          };
+        }
+        cache.margin = an ? an.margin : null;
+        cache.hzAtMax = an ? an.horizonAtMax : null;
+      } else {
+        cache.margin = null; cache.hzAtMax = null;
+      }
+
       const defs = [['C1', lc.c1], ['C2', lc.c2], ['MÁX', lc.max], ['C3', lc.c3], ['C4', lc.c4]];
       for (const [n, ev] of defs) {
         if (!ev) continue;
@@ -486,6 +516,32 @@
     }
     g.stroke();
 
+    // ---- Silueta del relieve ----
+    /* Mismo color que en la grafica del perfil: rojo es «terreno» en toda la
+       app. Se rellena hacia abajo para que se lea como suelo y no como otra
+       linea de referencia mas. */
+    if (cache.terrain.length) {
+      const pts = [];
+      for (const v of cache.terrain) {
+        const p = P(v);
+        if (!p.behind && p.x > -200 && p.x < w + 200) pts.push(p);
+      }
+      if (pts.length > 1) {
+        g.beginPath();
+        g.moveTo(pts[0].x, h);
+        for (const p of pts) g.lineTo(p.x, p.y);
+        g.lineTo(pts[pts.length - 1].x, h);
+        g.closePath();
+        g.fillStyle = 'rgba(255,95,109,.13)';
+        g.fill();
+
+        g.strokeStyle = 'rgba(255,95,109,.85)'; g.lineWidth = 2;
+        g.beginPath();
+        pts.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
+        g.stroke();
+      }
+    }
+
     // ---- Marcas de azimut ----
     g.font = '600 11px -apple-system, sans-serif';
     g.textAlign = 'center';
@@ -532,11 +588,30 @@
       }
     }
 
+    // ---- Donde el terreno se traga el Sol ----
+    if (cache.block) {
+      const p = P(cache.block.vec);
+      if (!p.behind && p.x > -140 && p.x < w + 140) {
+        g.strokeStyle = '#ff5f6d'; g.lineWidth = 2.5;
+        g.beginPath(); g.arc(p.x, p.y, 9, 0, 7); g.stroke();
+        g.beginPath(); g.moveTo(p.x - 13, p.y); g.lineTo(p.x + 13, p.y); g.stroke();
+        g.font = '700 11px -apple-system, sans-serif'; g.textAlign = 'center';
+        g.strokeStyle = 'rgba(0,0,0,.75)'; g.lineWidth = 3;
+        const lb = '⛰ ' + cache.block.label;
+        g.strokeText(lb, p.x, p.y + 24);
+        g.fillStyle = '#ff9aa2'; g.fillText(lb, p.x, p.y + 24);
+      }
+    }
+
     // ---- El Sol ahora ----
     const rSun = Math.max(11, (0.266 * D2R) * f * 5);
     const p = cache.sunVec ? P(cache.sunVec) : { behind: true, dx: 0, dy: 0 };
 
-    if (!p.behind && p.x > -120 && p.x < w + 120 && p.y > -120 && p.y < h + 120) {
+    /* Margen estrecho: con 120 px el Sol podia estar fuera de la pantalla y
+       aun asi contar como «visible», asi que no salia la flecha justo cuando
+       hacia falta. Y al reves: en cuanto el Sol entra en pantalla, la flecha
+       y el «gira cap aqui» sobran y desaparecen. */
+    if (!p.behind && p.x > -40 && p.x < w + 40 && p.y > -40 && p.y < h + 40) {
       // Ejes celestes proyectados: así la Luna sale en su orientación real
       let eScr = null, nScr = null;
       if (cache.eVec && cache.nVec) {
@@ -652,8 +727,11 @@
     const srcTag = ar.source === 'ios' || ar.source === 'absolute' ? ''
                  : ar.source === 'relative' ? ` <span style="color:#ffca4a">${T('ar.relTag')}</span>` : '';
     const offTag = ar.headingOffset ? ` <span style="color:#46e39b">${ar.headingOffset > 0 ? '+' : ''}${ar.headingOffset.toFixed(0)}°</span>` : '';
+    const hzTag = (cache.margin != null)
+      ? `<div>${T('ar.terrain', { hz: cache.hzAtMax.toFixed(1), m: cache.margin.toFixed(1) })}</div>` : '';
     const info =
       `<div>Az <b>${cache.sunAz.toFixed(1)}°</b> · Alt <b>${cache.sunAlt.toFixed(1)}°</b>${offTag}</div>` +
+      hzTag +
       (st && !st.outOfRange ? `<div>${T('ar.covered')} <b>${(st.obscuration * 100).toFixed(1)} %</b></div>` : '') +
       `<div>${cd}${srcTag}</div>`;
     if (info !== lastInfo) { lastInfo = info; $('arInfo').innerHTML = info; }
@@ -668,6 +746,8 @@
       setHint(T('ar.totality'), true);
     } else if (lc && lc.c2 && (lc.c2.date - t) > 0 && (lc.c2.date - t) < 120000) {
       setHint(T('ar.soon'), true);
+    } else if (cache.block && lc && t < lc.max.date) {
+      setHint(T('ar.hidesAt', { time: cache.block.label }), false);
     } else if (st && st.magnitude > 0) {
       setHint(T('ar.partial'), false);
     } else if (cache.sunAlt < 0) {

@@ -30,8 +30,13 @@
      punto y ya no dice nada. Escalándolo, la línea hacia el Sol llega hasta
      donde llegue el mapa, y de un vistazo ves si hay una sierra a veinte
      kilómetros justo en esa dirección. */
-  const CIRCLE_FRAC = 0.40;              // fracción del ancho visible del mapa
+  /* 0,34 y no mas: el circulo se calcula sobre el ANCHO del mapa, que es mas
+     alto que ancho, y con 0,40 el icono del Sol se salia por el borde cuando
+     el azimut apuntaba de lado. */
+  const CIRCLE_FRAC = 0.34;              // fracción del ancho visible del mapa
   const CIRCLE_MIN = 60;                 // metros
+  const SUN_COLOR = '#ffd60a';           // amarillo del cercle d'escala
+  const RAY_COLOR = '#ff1e1e';           // vermell de la línia cap al Sol
 
   function circleRadius() {
     if (!map) return CIRCLE_MIN;
@@ -160,9 +165,19 @@
     const az = st.lc.max.az, alt = st.lc.max.altRefracted;
     const here = [st.lat, st.lon];
 
+    /* Amarillo intenso con un reborde negro debajo.
+       El blanco se perdia sobre la ortofoto: hay campos claros, tejados y
+       espuma de mar que lo hacen desaparecer. La tecnica cartografica de
+       siempre —una linea oscura mas gruesa debajo y la de color encima— hace
+       que se lea sobre cualquier fondo, y el amarillo mantiene la asociacion
+       con el Sol que ya usa el resto de la app. */
+    /* El circulo es solo la referencia de escala, asi que va fino y a trazos,
+       parpadeando despacio: se ve sin competir con la linea, que es la que
+       lleva la informacion. Sin reborde negro debajo, que rellenaria los
+       huecos del trazo discontinuo. */
     layers.circle = L.circle(here, {
-      radius: CIRCLE_M, color: '#fff', weight: 2, opacity: .85,
-      fill: false, interactive: false
+      radius: CIRCLE_M, color: SUN_COLOR, weight: 1.5, opacity: .95,
+      dashArray: '5 7', fill: false, interactive: false, className: 'dt-ring'
     }).addTo(map);
 
     // Marca del Norte, para leer el círculo como una rosa de los vientos
@@ -170,30 +185,37 @@
     layers.north = L.marker([n.lat, n.lon], {
       interactive: false,
       icon: L.divIcon({ className: '', iconSize: [16, 16], html:
-        '<div style="transform:translate(-50%,-50%);color:#fff;font:700 11px -apple-system,sans-serif;' +
-        'text-shadow:0 0 4px #000">N</div>' })
+        '<div style="transform:translate(-50%,-50%);color:#fff;font:800 12px -apple-system,sans-serif;' +
+        'text-shadow:0 0 3px #000,0 0 6px #000">N</div>' })
     }).addTo(map);
 
     // Línea hacia el Sol y el Sol sobre la circunferencia
     const s = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M);
+    /* La linea hacia el Sol, en rojo: es el dato, y tiene que cantar. El
+       reborde negro debajo la mantiene legible sobre campos claros y espuma. */
+    layers.rayCase = L.polyline([here, [s.lat, s.lon]], {
+      color: '#000', weight: 5.5, opacity: .5, interactive: false
+    }).addTo(map);
     layers.ray = L.polyline([here, [s.lat, s.lon]], {
-      color: '#fff', weight: 2, opacity: .9, interactive: false
+      color: RAY_COLOR, weight: 2.5, opacity: 1, interactive: false
     }).addTo(map);
 
     layers.sun = L.marker([s.lat, s.lon], {
       interactive: false,
-      icon: L.divIcon({ className: '', iconSize: [26, 26], html:
-        '<div style="transform:translate(-50%,-50%);font-size:20px;line-height:1;' +
-        'filter:drop-shadow(0 0 6px rgba(0,0,0,.9))">☀️</div>' })
+      icon: L.divIcon({ className: '', iconSize: [32, 32], html:
+        '<div style="transform:translate(-50%,-50%);font-size:26px;line-height:1;' +
+        'filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 7px rgba(0,0,0,.95))">☀️</div>' })
     }).addTo(map);
 
     // La etiqueta de grados, a media línea, como en el visualizador oficial
-    const mid = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M * 0.62);
+    // A media linea, no sobre el Sol: si no, la etiqueta le tapa el icono
+    const mid = Horizon.destPoint(st.lat, st.lon, az, CIRCLE_M * 0.48);
     layers.label = L.marker([mid.lat, mid.lon], {
       interactive: false,
       icon: L.divIcon({ className: '', iconSize: [80, 18], html:
-        `<div style="transform:translate(-50%,-140%);white-space:nowrap;color:#fff;` +
-        `font:600 11px -apple-system,sans-serif;text-shadow:0 0 5px #000,0 0 3px #000">` +
+        `<div style="transform:translate(-50%,-150%);white-space:nowrap;` +
+        `background:rgba(0,0,0,.62);color:${SUN_COLOR};border-radius:6px;padding:2px 6px;` +
+        `font:700 11px -apple-system,sans-serif">` +
         `${az.toFixed(2)}° · ${distLabel(CIRCLE_M)}</div>` })
     }).addTo(map);
 
@@ -292,8 +314,7 @@
     if (p && p.muni && (st.label || '').toLowerCase().indexOf(p.muni.toLowerCase()) < 0) {
       parts.push(p.muni);
     }
-    parts.push(coords);
-    el.textContent = parts.join(' · ');
+    el.innerHTML = `<b>${parts.join(' · ')}</b><small>${coords}</small>`;
   }
 
   // ---------------------------------------------------------------------

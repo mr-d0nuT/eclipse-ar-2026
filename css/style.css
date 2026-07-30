@@ -763,3 +763,14 @@ header.hero { padding: 6px 0 10px; }
   background: rgba(255,210,125,.06); border: 1px solid rgba(255,210,125,.18);
   animation: paneIn .18s ease-out;
 }
+
+/* El chip de ubicación, en dos líneas: el sitio arriba y las coordenadas
+   debajo. Con el municipio dentro, todo en una línea ya no cabía. */
+#locChip { flex-direction: column; gap: 1px; padding: 7px 14px; line-height: 1.25; }
+#locChip b { font-size: 13.5px; font-weight: 600; }
+#locChip small { font-size: 11px; color: var(--txt-faint); font-variant-numeric: tabular-nums; }
+
+/* El círculo de escala parpadea despacio: presente pero sin robar atención
+   a la línea roja, que es la que dice hacia dónde mirar. */
+.dt-ring { animation: dtRing 2s ease-in-out infinite; }
+@keyframes dtRing { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
