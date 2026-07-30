@@ -67,11 +67,14 @@
     if (name === 'plan') {
       const m = App() && App().state.map;
       if (m) setTimeout(() => m.invalidateSize(), 60);
-      if (App()) refreshNearby();
-      if (global.Detail) Detail.shown();
+      if (App()) { refreshNearby(); showOfficial(); }
     }
-    if (name === 'now' && App()) showOfficial();
-    if (name === 'now' && data.analysis) drawHorizonChart();
+    /* El mapa del detalle vive en Ara: Leaflet mide el contenedor al crearlo,
+       y si se creó con la pestaña oculta sale en blanco hasta que se le avisa. */
+    if (name === 'now') {
+      if (global.Detail) Detail.shown();
+      if (data.analysis) drawHorizonChart();
+    }
   }
 
   document.querySelectorAll('.tabbtn[data-pane]').forEach(b => {
